@@ -78,6 +78,9 @@ git checkout v19.07.4
 ./scripts/feeds update -a
 ./scripts/feeds install -a
 ```
+* (Optional step) In order to make the package selection operation faster (which will be performed few steps after this one), you can use an already available OpenWrt build system configuration file.
+This file may not already select all the packages listed below, but it should include at least most of them and all the foundamental ones.
+The file is located inside "OpenWrt_build_config_file", in this repository, and it is called "config-2020-07-13a". It should be renamed to ".config" and copied to the `openwrt` git directory, replacing the existing hidden file.
 * Run "make menuconfig" and select the **x86_64** target, then set a default config:
 ```
 make menuconfig
