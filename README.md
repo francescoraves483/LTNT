@@ -1,3 +1,5 @@
+![](./images/LTNT_logo.png)
+
 # What is LTNT?
 
 LTNT ("Long Term Network Tester") is a customizable, open source, and cost-effective software and harwdare platform for the execution of network measurements, especially focused on long-term measurements and monitoring.
@@ -15,7 +17,7 @@ The platform software is relying on the following elements, which should be inst
 - [iPerf](https://iperf.fr/) 2.0.13+ (also versions with a lower subversion number should work fine. However, the system has been tested to work at with version 2.0.13 or greater)
 - [LaTe](https://github.com/francescoraves483/LaMP_LaTe/tree/development) 0.1.7-beta-development 20201105a or greater (the [development branch](https://github.com/francescoraves483/LaMP_LaTe/tree/development) shall be used for the time being, as the platform requires the `--initial-timeout` option, which is not yet available in version 0.1.6-beta, on the master branch)
 - the LTNT test manager program, i.e. the "core" of LTNT, acting as a lightweight orchestrating software to launch and manage the execution of different instances of iPerf and LaTe during the execution of the tests. This repository is hosting the LTNT test manager program, plus few other useful files
-- a package in order to perform the clock synchronization between the involved devices, in which iPerf, LaTe and LTNT test manager will run (suggested package: `ptplinux` - or `ptpd`, when not using the suggested hadware boards - for PTP clock synchronization)
+- a package in order to perform the clock synchronization between the involved devices, in which iPerf, LaTe and LTNT test manager will run (suggested package: `linuxptp` - or `ptpd`, when not using the suggested hadware boards - for PTP clock synchronization)
 
 # LTNT customizable hardware and required minimum specifications
 
@@ -34,13 +36,13 @@ The hardware is composed by:
 - Out of the two other ports, in both boards, one should be reserved for connecting a PC to the boards via SSH (in order to control them), without "disturbing" neither the measurements nor the control/clock synchronization connecton.
 - The two boards should be connected to the two ends of the network under test either by using the third free Ethernet port, or by using Wi-Fi/cellular connectivity thanks to mPCIe modules installed on the hardware.
 - The suggested Ethernet port configuration and connection (which also corresponds to the default values in LTNT test manager) is depicted below:
-[APU2x4 Ethernet port suggested configuration]: <link> "APU2x4 Ethernet port suggested configuration"
+![](./images/APU2x4_suggested_ethernet_configuration.png)
 
 As operating system, we selected OpenWrt (version 19.07+), as it proved to be a robust and effective Linux OS for networking applications.
 Thus, the full LTNT platform is composed by:
 - The two APU2x4 boards, connected following the guidelines described before
 - OpenWrt 19.07+
-- The ptplinux package for the PTP clock synchronization
+- The linuxptp package for the PTP clock synchronization
 - LaTe, iPerf 2 and LTNT test manager installed into OpenWrt
 
 # How does LTNT work?
@@ -51,7 +53,7 @@ The LTNT test manager on the master can be configured via an INI configuration f
 The other hardware device acts instead as a slave. On the slave the LTNT test manager should be installed as a service, and be always ready to accept connections from the master.
 It is then completely controlled by the master (its configuration parameters are also received from the master and no INI file is needed) and the user only needs to access it, for the time being, to collect the CSV logs after a measurement session.
 
-After a measurement session, the LTLT software will output a series of CSV files containing all the measured metrics, inside the folders specified in the LTNT.ini file.
+After a measurement session, the LTLT software will output a series of CSV files containing all the measured metrics, inside the folders specified in the LTNT.ini configuration file.
 
 # Steps for preparing and installing the platform
 ## The case with Ethernet connection to the two ends of the network under test and the usage of the suggested hardware is considered
