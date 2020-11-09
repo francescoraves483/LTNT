@@ -18,7 +18,7 @@ The platform is able to measure the following metrics, in a continuous loop:
 The platform software is relying on the following elements, which should be installed all together in order to perform countinuos network measurements:
 - [iPerf](https://iperf.fr/) 2.0.13+ (also versions with a lower subversion number should work fine. However, the system has been tested with version 2.0.13 or greater) - used for the throughput measurements
 - [LaTe](https://github.com/francescoraves483/LaMP_LaTe/tree/development) 0.1.7-beta-development 20201105a or greater (the [development branch](https://github.com/francescoraves483/LaMP_LaTe/tree/development) shall be used for the time being, as the platform requires the `--initial-timeout` option, which is not yet available in version 0.1.6-beta, on the master branch) - used for measuring all the other metrics
-- the LTNT test manager program, i.e. the "core" of LTNT, acting as a lightweight orchestrating software to launch and manage the lifecycle of different instances of iPerf and LaTe during the execution of the tests. **This repository is hosting the LTNT test manager program, plus few other useful files.**
+- the LTNT test manager program, the core of LTNT, acting as a lightweight orchestrating software to launch and manage the lifecycle of different instances of iPerf and LaTe during the execution of the tests. **This repository is hosting the LTNT test manager program, plus some other useful files.**
 - a package in order to perform the clock synchronization between the involved devices, in which iPerf, LaTe and LTNT test manager are going to run (suggested package for PTP clock synchronization: `linuxptp` - or `ptpd`, when not using the suggested hadware boards)
 
 # LTNT customizable hardware and required minimum specifications
@@ -519,7 +519,7 @@ chmod +x /etc/init.d/LTNT_test_manager_slave
 And launch, to enable the service:
 ```
 service LTNT_test_manager_slave enable
-service LTNT_test_manager_slave stop
+service LTNT_test_manager_slave start
 ```
 
 The service can then be managed, on OpenWrt, with:
