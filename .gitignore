@@ -1,0 +1,14 @@
+# Compiled source
+LTNT_Test_Manager/obj/*.o
+LTNT_Test_Manager/obj
+LTNT_Test_Manager/obj/inih/*.o
+LTNT_Test_Manager/obj/inih
+
+# Compiled LTNT test manager executable
+LTNT_Test_Manager/LTNT_test_manager
+
+# nohup.out file, if the user launches LTNT test manager with nohup
+LTNT_Test_Manager/nohup.out
+
+# Any CSV log file that could be present in the LTNT Test Manager LaTe directory
+LTNT_Test_Manager/*.csv

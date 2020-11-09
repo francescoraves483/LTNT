@@ -1,0 +1,4 @@
+-pthread
+-m
+-Iinclude
+-Ilibs/inih
