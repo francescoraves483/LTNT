@@ -5,8 +5,8 @@
 
 #define LTNT_YEAR 2020
 #define LTNT_MONTH 11
-#define LTNT_DAY 06
-#define LTNT_SUBVERSION "e"
+#define LTNT_DAY 9
+#define LTNT_SUBVERSION "a"
 #define PROG_NAME_LONG "Long Term Network Tester Test Manager"
 #define PROG_NAME_SHORT "LTNT Test Manager"
 #define GITHUB_LINK "n.a."

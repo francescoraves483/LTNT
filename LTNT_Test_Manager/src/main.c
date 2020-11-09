@@ -488,7 +488,7 @@ int main (int argc, char **argv) {
 	char latecmdstr[LATE_CMD_STR_MAX_SIZE]={0};
 
 	// LaTe payload length array index
-	int payload_lengths_idx=0;
+	int payload_lengths_idx;
 
 	// Logs directory names (shall be initialized with LOGDIRNAMES_T_INITIALIZER)
 	logdirnames_t logdirnames=LOGDIRNAMES_T_INITIALIZER;
@@ -604,6 +604,7 @@ int main (int argc, char **argv) {
 
 	do {
 		iperf_pid=0;
+		payload_lengths_idx=0;
 
 		// Check the date
 		currdate=getLocalTime();
