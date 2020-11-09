@@ -11,7 +11,7 @@ The platform is able to measure the following metrics, in a continuous loop:
 - all the other metrics supported by [LaTe](https://github.com/francescoraves483/LaMP_LaTe)
 - throughput (in both directions), over TCP and UDP
 
-**Important:** this project is still in an early stage. You are really welcome if you want to contribute and provide suggestions! More features and configuration parameters are going to be added in the future.
+**Important:** this project is still in a very early stage. You are really welcome if you want to contribute and provide suggestions! More features and configuration parameters are going to be added in the future.
 
 # LTNT open source software
 
@@ -579,6 +579,42 @@ All the output of the LTNT test manager will be saved inside the `nohup.out` fil
 
 LaTe errors (from *stderr*) are automatically saved in log files (named `late_errors_<test_type>.log`), inside the same folder from which the LTNT test manager is launched.
 These files are cleared when calling `./LTNT_test_manager --master -c`. If you want to analyze them, remember to save them together with the logs before performing any "clear" operation.
+
+# Quick connectivity test script
+
+In the future, it is planned to add to the LTNT Test Manager the possibility to perform very short tests, just to check if the test interface connectivity, through the whole network under study, is working properly (master->slave, slave->master and master<->slave).
+
+As this feature is not yet available, you can find, inside "Utils", a bash script developed for this purpose.
+
+It should be configured by changing the variable values in the first lines:
+```
+IP_DATA_REMOTE=172.22.47.249 # IP of the slave board (test interface)
+IP_CONTROL_REMOTE=10.0.2.109 # IP of the slave board (control interface)
+PORT_BIDIR=46001			 # port_late_bidir in LTNT.ini
+PORT_UNIDIR_UL=46002		 # port_late_unidir_UL in LTNT.ini
+PORT_UNIDIR_DL=46003         # port_late_unidir_DL in LTNT.ini
+INTERFACE="eth0"             # test_interface in LTNT.ini (defaul in LTNT Test Manager: eth0)
+
+MY_IP_DATA=172.22.47.250	 		# my_ip_data in LTNT.ini
+MY_IP_CONTROL_REMOTE=10.0.2.108		# my_ip_control in LTNT.ini
+
+UDP_IPERF_PKT_LEN=1400              # UDP_iperf_packet_len in LTNT.ini
+TCP_IPERF_BUF_LEN=128K              # TCP_iperf_buf_len in LTNT.ini
+
+SSH_PORT=22					  # SSH port to connect to the slave board via SSH, on the control interface
+```
+These values should be equal to the corresponding values set in LTNT.ini.
+
+The script should be copied to **/root** in the **master board**. It will then coordinate with the **slave board** via the dedicated control interface, with SSH (instead of using UDP/TCP). The SSH port to be used is specified as `SSH_PORT` (in the great majority of cases, this port is left equal to `22`, i.e. the default port for SSH).
+
+After transferring the script to the master board, you should (only once) enable its execution with:
+```
+chmod +x /root/Quick_test_connectivity.sh
+```
+Then, you can launch it by moving to the /root directory and calling:
+```
+./Quick_test_connectivity.sh
+```
 
 # External libraries used in this project
 
