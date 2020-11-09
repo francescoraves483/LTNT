@@ -484,7 +484,7 @@ Then, download and compile the LTNT test manager, by cloning this GitHub reposit
 ```
 git clone https://github.com/francescoraves483/LTNT.git
 cd LTNT
-cd LTNT_test_manager
+cd LTNT_Test_Manager
 ```
 Compile the test manager:
 ```
