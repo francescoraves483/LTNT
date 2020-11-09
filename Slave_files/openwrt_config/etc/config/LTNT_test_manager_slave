@@ -1,0 +1,3 @@
+config myservice 'LTNT_test_manager_slave'
+	option testif 'eth1'
+	

@@ -490,7 +490,7 @@ Compile the test manager:
 ```
 make compileAPU
 ```
-This will produce the LTNT test manager binary file (called `LTNT_test_manager`). Transfer this file, using for instance SCP, to both the boards, and place it inside `/root/LTNT` (suggested) or any other folder you like.
+This will produce the LTNT test manager binary file (called `LTNT_test_manager`). Transfer this file, using for instance SCP, to both the boards, and place it inside `/root/LTNT` (after creating the LTNT folder with `cd /root && mkdir LTNT`).
 
 Transfer also the `LTNT.ini` configuration file to the master board (**it is required only on the master board**), inside the same folder in which the `LTNT_test_manager` executable is placed.
 

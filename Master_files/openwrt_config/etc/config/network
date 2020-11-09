@@ -1,0 +1,42 @@
+
+config interface 'loopback'
+	option ifname 'lo'
+	option proto 'static'
+	option ipaddr '127.0.0.1'
+	option netmask '255.0.0.0'
+
+config globals 'globals'
+	option ula_prefix 'fd77:5157:bdcb::/48'
+
+config interface 'lan'
+#	option type 'bridge'
+	option ifname 'eth2'
+	option proto 'static'
+	option ipaddr '10.0.1.108'
+	option netmask '255.255.255.0'
+#	option gateway '10.0.1.1'
+#	option ip6assign '60'
+
+config interface 'ptplan'
+	option ifname 'eth1'
+	option proto 'static'
+	option ipaddr '10.0.2.108'
+	option netmask '255.255.255.0'
+
+config interface 'lte'
+	option ifname 'usb0'
+	option proto 'dhcp'
+
+#config interface 'dut'
+#	option ifname 'eth0'
+#	option proto 'static'
+#	option ipaddr '192.168.1.108'
+#	option gateway '192.168.1.254'
+#	option netmask '255.255.255.0'
+	
+config interface 'dut'
+	option ifname 'eth0'
+	option proto 'static'
+	option ipaddr '172.22.47.250'
+	option gateway '172.22.47.254'
+	option netmask '255.255.255.248'

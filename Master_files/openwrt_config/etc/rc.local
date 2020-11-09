@@ -1,0 +1,34 @@
+# Put your custom commands here that should be executed once
+# the system init finished. By default this file does nothing.
+
+ptp4l -i eth1 -m > /root/ptp4l.log &
+
+beep -f 500
+phc2sys -s /dev/ptp1 -w -m -S 1 > /root/phc2sys_initial.log &
+
+while true; do
+	if [ $(cat /root/phc2sys_initial.log | wc -l) -gt 0 ]; then
+		break
+	fi
+	sleep 1
+done
+	
+while true; do
+	cat /root/phc2sys_initial.log | tail -1 | grep "Waiting for ptp4l" >/dev/null 2>&1
+	if [ $? -ne 0 ]; then
+		break
+	fi
+	sleep 1
+done
+
+sleep 5
+killall -9 phc2sys
+
+phc2sys -s /dev/ptp1 -w -m > /root/phc2sys.log &
+beep -f 200 -l 200
+beep -f 700 -l 100 -D 200
+beep -f 200 -l 200
+beep -f 700 -l 100 -D 200
+beep -f 200 -l 200
+beep -f 700 -l 100 -D 200
+exit 0
