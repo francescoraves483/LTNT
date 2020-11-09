@@ -11,6 +11,8 @@ The platform is able to measure the following metrics, in a continuous loop:
 - all the other metrics supported by [LaTe](https://github.com/francescoraves483/LaMP_LaTe)
 - throughput (in both directions), over TCP and UDP
 
+**Important:** this project is still in an early stage. You are really welcome if you want to contribute and provide suggestions! More features and configuration parameters are going to be added in the future.
+
 # LTNT open source software
 
 The platform software is relying on the following elements, which should be installed all together in order to perform countinuos network measurements:
