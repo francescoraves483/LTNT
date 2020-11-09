@@ -2,7 +2,7 @@
 
 # What is LTNT?
 
-LTNT ("Long Term Network Tester") is a customizable, open source, and cost-effective software and harwdare platform for the execution of network measurements, especially focused on long-term measurements and monitoring.
+LTNT ("Long Term Network Tester") is a customizable, open source, and cost-effective software and hardware platform for the execution of network measurements, especially focused on long-term measurements and monitoring.
 The platform is able to measure the following metrics, in a continuous loop:
 - latency (unidirectional, in both directions, and RTT) over UDP
 - packet loss
@@ -16,28 +16,28 @@ The platform is able to measure the following metrics, in a continuous loop:
 # LTNT open source software
 
 The platform software is relying on the following elements, which should be installed all together in order to perform countinuos network measurements:
-- [iPerf](https://iperf.fr/) 2.0.13+ (also versions with a lower subversion number should work fine. However, the system has been tested to work at with version 2.0.13 or greater)
-- [LaTe](https://github.com/francescoraves483/LaMP_LaTe/tree/development) 0.1.7-beta-development 20201105a or greater (the [development branch](https://github.com/francescoraves483/LaMP_LaTe/tree/development) shall be used for the time being, as the platform requires the `--initial-timeout` option, which is not yet available in version 0.1.6-beta, on the master branch)
-- the LTNT test manager program, i.e. the "core" of LTNT, acting as a lightweight orchestrating software to launch and manage the execution of different instances of iPerf and LaTe during the execution of the tests. This repository is hosting the LTNT test manager program, plus few other useful files
-- a package in order to perform the clock synchronization between the involved devices, in which iPerf, LaTe and LTNT test manager will run (suggested package: `linuxptp` - or `ptpd`, when not using the suggested hadware boards - for PTP clock synchronization)
+- [iPerf](https://iperf.fr/) 2.0.13+ (also versions with a lower subversion number should work fine. However, the system has been tested with version 2.0.13 or greater) - used for the throughput measurements
+- [LaTe](https://github.com/francescoraves483/LaMP_LaTe/tree/development) 0.1.7-beta-development 20201105a or greater (the [development branch](https://github.com/francescoraves483/LaMP_LaTe/tree/development) shall be used for the time being, as the platform requires the `--initial-timeout` option, which is not yet available in version 0.1.6-beta, on the master branch) - used for measuring all the other metrics
+- the LTNT test manager program, i.e. the "core" of LTNT, acting as a lightweight orchestrating software to launch and manage the lifecycle of different instances of iPerf and LaTe during the execution of the tests. **This repository is hosting the LTNT test manager program, plus few other useful files.**
+- a package in order to perform the clock synchronization between the involved devices, in which iPerf, LaTe and LTNT test manager are going to run (suggested package for PTP clock synchronization: `linuxptp` - or `ptpd`, when not using the suggested hadware boards)
 
 # LTNT customizable hardware and required minimum specifications
 
 The open source software mentioned before can potentially run on any compatible device, provided that it is respecting the following minimum requirements:
 - Two (possibly equal) Linux devices are needed and should be attached at the two ends of the network at which the user is interested to measure the aforementioned metrics. At least Linux kernel version 4.14 is recommended.
-- Both the devices should have a dedicated Ethernet port, which is used by LTNT test manager to send control data and to synchronize the execution of the tests between these devices. This dedicated port should be *dedicated* and not used to connect the devices to the network under test. The two dedicated ports should be connected, if possible, with a point-to-point connection, i.e. with a single Ethernet cable (Gigabit Ethernet is better than 100 Mbit Ethernet).
-These ports/interfaces should also be used to precisely sinchronize the clock between the two devices. Any failure in providing the clock synchronization will result in inaccurate unidurectional latency measurements (while all the other measurements should be unaffected).
+- Both the devices should have a dedicated Ethernet port, which is used by LTNT test manager to send/receive control data and to synchronize the execution of the tests between these devices. This dedicated port should be *dedicated* and not used to connect the devices to the network under test. The two dedicated ports should be connected, if possible, with a point-to-point connection, i.e. with a single Ethernet cable (Gigabit Ethernet is better than 100 Mbit Ethernet).
+These ports/interfaces should also be used to precisely sinchronize the clocks of the two devices (by using `linuxptp` or any other clock synchronization package). Any failure in providing the clock synchronization will result in inaccurate unidurectional latency measurements (while all the other measurements should be unaffected).
 We highly recommend, for this purpose, Ethernet NICs supporting the PTP (IEEE 1588) Hardware Clock synchronization, like Intel i210-T1, i210AT/i211AT, i219-V.
-- The devices should be connected to the network under test (either through Ethernet, or through 802.11, or though any other interface different than the dedicated one mentioned before) and should be reachable in both direction via IPv4. The user may need to configure port forwarding if a NAT is present in between.
+- The devices should be connected to the network under test (either through Ethernet, or through 802.11, or through any other interface different than the dedicated one mentioned before) and should be reachable in both directions via IPv4. **The user may need to configure port forwarding if a device performing a NAT is placed in between.**
 
-However, the official LTNT platform is also composed by a specific hardware, which has been extensively tested and which proved to be ideal for the purpose of performing network measurements, on which the software mentioned before should be integrated.
-The hardware is composed by:
-- Two [APU2x4 embedded boards](https://www.pcengines.ch/apu2.htm) (we tested APU2C4, but any APU2 board should be fine, including APU2B4, APU2D4 and APU2E4)
+However, the **official LTNT platform** is composed by a **specific hardware**, which has been extensively tested and which proved to be ideal for the purpose of performing network measurements, on which the software mentioned before should be integrated.
+
+The hardware is composed by two [APU2x4 embedded boards](https://www.pcengines.ch/apu2.htm) (we tested the system with APU2C4, but any APU2 board should be fine, including APU2B4, APU2D4 and APU2E4), with the following characteristics and configuration:
 - The boards are already equipped with PTP-compatible Ethernet cards. The connectivity to the network under test can be extended with any compatible mPCIe card (such as Compex WLE600VX for 802.11, or Sierra Wireless AirPrime MC7304 for LTE).
-- An Ethernet port (**the same one on both boards**!) should be reserved on the two boards for the control/clock synchronization connection. These two Ethernet ports should be connected via a point-to-point connection (i.e. a single Ethernet cable).
+- An Ethernet port (**the same one on both boards!**) should be reserved on the two boards for the control/clock synchronization connection. These two Ethernet ports should be connected via a point-to-point connection (i.e. a single Ethernet cable).
 - Out of the two other ports, in both boards, one should be reserved for connecting a PC to the boards via SSH (in order to control them), without "disturbing" neither the measurements nor the control/clock synchronization connecton.
-- The two boards should be connected to the two ends of the network under test either by using the third free Ethernet port, or by using Wi-Fi/cellular connectivity thanks to mPCIe modules installed on the hardware.
-- The suggested Ethernet port configuration and connection (which also corresponds to the default values in LTNT test manager) is depicted below:
+- The two boards should be connected to the two endpoints of interest, in the network under test, either by relying on the third free Ethernet port, or by using Wi-Fi/cellular connectivity thanks to mPCIe modules installed on the hardware.
+- The suggested Ethernet port configuration and connection (which also corresponds to the default configuration values in LTNT test manager) is depicted below:
 ![](./images/APU2x4_suggested_ethernet_configuration.png)
 
 As operating system, we selected OpenWrt (version 19.07+), as it proved to be a robust and effective Linux OS for networking applications.
@@ -49,18 +49,21 @@ Thus, the full LTNT platform is composed by:
 
 # How does LTNT work?
 
-LTNT work with a master-slave paradigm. One hardware device acts as master, and it is directly controlled by the user, for instance for starting a measurement session.
-The LTNT test manager on the master can be configured via an INI configuration file (LTNT.ini).
+LTNT works using a master-slave paradigm. One hardware device acts as master, and it is directly controlled by the user, for instance for starting a measurement session.
+The *LTNT test manager* on the master can be configured via an INI configuration file (**LTNT.ini**).
 
-The other hardware device acts instead as a slave. On the slave the LTNT test manager should be installed as a service, and be always ready to accept connections from the master.
-It is then completely controlled by the master (its configuration parameters are also received from the master and no INI file is needed) and the user only needs to access it, for the time being, to collect the CSV logs after a measurement session.
+The other hardware device acts instead as slave. On the slave the *LTNT test manager* should be installed as a *service*, and be always ready to accept connections from the master.
+It is then completely controlled by the master (its configuration parameters are also received from the master and no INI file is used) and the user only needs to access it, for the time being, to collect the CSV logs after a measurement session.
 
-After a measurement session, the LTLT software will output a series of CSV files containing all the measured metrics, inside the folders specified in the LTNT.ini configuration file.
+After a measurement session, the LTLT software will output a series of CSV files containing all the measured metrics.
+
+These files will be saved inside the folders specified in the LTNT.ini configuration file of the master (the same folder names and paths will be then used in the slave file system).
 
 # Steps for preparing and installing the platform
 ## The case with Ethernet connection to the two ends of the network under test and the usage of the suggested hardware is considered
 
 * Get two APU2x4 boards, and choose the device which will become the master, and the one which will become the slave.
+* We will now download and install OpenWrt in the two boards.
 * Clone the git repository of OpenWrt on a Linux PC (e.g. running Ubuntu 20.04 LTS):
 ```
 git clone https://git.openwrt.org/openwrt/openwrt.git
@@ -80,7 +83,7 @@ git checkout v19.07.4
 make menuconfig
 make defconfig
 ```
-* Run "make kernel_menuconfig" and select "Processor type and features->Preemption Model->Preemptible Kernel (Low-Latency Desktop" (this will make the kernel preemptible, allowing system calls to be pre-empted by the CPU scheduler and ensuring a more reactive low-latency execution, to more precisely evaluate the latency metrics) - this option is also suggested when not using the suggested OS/hardware:
+* Run "make kernel_menuconfig" and select "**Processor type and features->Preemption Model->Preemptible Kernel (Low-Latency Desktop)**" (this will make the kernel preemptible, allowing system calls to be pre-empted by the CPU scheduler and ensuring a more reactive low-latency execution, to more precisely evaluate the latency metrics) - this option is also suggested when not using the suggested OS/hardware (i.e. OpenWrt/APU2x4):
 ```
 make kernel_menuconfig
 ```
@@ -88,7 +91,7 @@ make kernel_menuconfig
 ```
 make menuconfig
 ```
-Packages:
+Packages list:
 ```
 amd64-microcode
 base-files
@@ -309,25 +312,26 @@ usbutils
 usign
 zlib
 ```
-* "Download all dependency source files before final make":
+* Download all dependency source files before performing the build operation with "make":
 ```
 make download
 ```
-* Build (the build command for a multi-core verbose compilation is shown, using a quad-core eigth-thread Intel Core i7 CPU)
+* Build the OpenWrt image (the build command for a multi-core verbose compilation is shown, using a quad-core eigth-thread Intel Core i7 CPU)
 ```
 make -j10 V=s
 ```
 * Please note that the build process may take up to several hours, depeding on the development PC characteristics; you will find the compiled OpenWrt images inside "/bin/targets/x86/64/"
-* Configure then the OpenWrt toolchain for crosscompiling the needed software (LaTe and LTNT test manager) for the target embedded boards. The instructions can be found [here](https://openwrt.org/docs/guide-developer/crosscompile).
+* Configure then the OpenWrt toolchain for cross-compiling the needed software (LaTe and LTNT test manager) for the target embedded boards. The instructions can be found [here](https://openwrt.org/docs/guide-developer/crosscompile). The first four main points should be sufficient to enable cross-compilation, in our case.
+* After creating the OpenWrt image, flash it into both boards. Instructions on how to do so can be found in [this document](https://webthesis.biblio.polito.it/9525/1/tesi.pdf), in section 5.3 (starting from page 172). The instructions are for the APU1D devices, but they are the same also for the APU2 boards.
 
-Once the system has been downloaded/flashed into the target embedded board and after rebooting at least once, do the following operations:
+Once the system has been downloaded/flashed into the target embedded board and after rebooting it at least once, do the following operations (**on both the master and the slave boards**):
 * Connect a serial cable to the board and to your development PC and open a new connection with baud rate 115200
 * Edit the "/etc/config/network" configuration file:
 ```
 vi /etc/config/network
 ```
-* Locate the configuration block for the SSH Ethernet interface (e.g. `eth2`). Comment out the lines about 'bridge' and 'ip6assign' adding a # in front of them
-* If more than one Ethernet interface is listed after `option ifname`, edit this line and make sure only one interface is selected:
+* Locate the configuration block for the SSH Ethernet interface (normally the interface is called `lan` in the configuration file). Comment out the lines about 'bridge' and 'ip6assign' adding a # in front of them
+* If more than one Ethernet interface is listed after `option ifname`, edit this line and make sure only the interface you want to use for SSH is specified:
 ```
 option ifname 'eth2'
 ```
@@ -335,14 +339,14 @@ option ifname 'eth2'
 ```
 option ipaddr '192.168.1.178'
 ```
-* Reboot the boards:
+* Reboot the board:
 ```
 reboot
 ```
 
-You can now disconnect the serial cable and connect via SSH to the boards for the next configuration steps (using, as username, "root").
+You can now disconnect the serial cable and **connect via SSH to the boards for the next configuration steps** (using, as username, "root").
 
-* Edit the "/etc/config/network" configuration file, by replacing the actual content and using as a model the following one (the original file can also be found inside 'openwrt_config/etc/config' in this repository):
+* Edit the "/etc/config/network" configuration file (`nano /etc/config/network`), by replacing/integrating the actual content and using as a model the following one (the original file can also be found inside 'Slave/Master_files/openwrt_config/etc/config' in this repository):
 ```
 config interface 'loopback'
         option ifname 'lo'
@@ -381,12 +385,13 @@ config interface 'dut'
 ```
 In the `lan` block, you should insert the IP address, netmask and interface name for the SSH Ethernet interface (`eth0` when using the suggested connections, as described before).
 
-In the `ptplan` block, you should insert the IP address, netmask and interface name for the control/clock synchronization Ethernet interface (`eth1` when using the suggested connections, as described before).
+In the `ptplan` block, you should insert the IP address, netmask and interface name for the control/clock synchronization Ethernet interface (`eth1` when using the suggested connections, as described before). The two boards must have an IPv4 address belonging to the same subnet.
 
-In the `dut` block, you should insert the IP address, netmask and interface name for the Ethernet interface connected to the corresponding endpoint of the network under test (if Ethernet is used to connect to the network under test).
+In the `dut` block, you should insert the IP address, netmask, interface name and, if needed, default gateway for the Ethernet interface connected to the corresponding endpoint of the network under test (if Ethernet is used to connect to the network under test).
 
 The `lte` interface is an optional interface which can be used to connect to a smartphone via USB thethering. In this case the connection to the network under test will be performed via the smartphone (thanks to USB), instead of Ethernet or other media via mPCIe modules.
-* Disable NTP, to avoid any undesired clock step during the steps, if the boards are connected to the Internet. This can be done by editing "/etc/config/system" and setting:
+This interface can be configured to receive an IP address/default gateway via DHCP, as in this case, or it can also be configured with a static IP address. The supported OpenWrt network configuration options are listed [here](https://openwrt.org/docs/guide-user/base-system/basic-networking).
+* Disable NTP, to avoid any undesired clock step during the tests, if the boards are connected to the Internet. This can be done by editing "/etc/config/system" and setting:
 ```
 option enabled '0'
 option enable_server '0'
@@ -395,9 +400,9 @@ After:
 ```
 config timeserver 'ntp'
 ```
-* Edit the "/etc/rc.local" file of both boards (this file will contain a series of commands to be executed at startup in order to guarantee the clock synchronization via the `ptplan` interface), inserting the following content (the original file can also be found inside 'openwrt_config/etc' in this repository):
+* Edit the "/etc/rc.local" file of both boards (this file will contain a series of commands to be executed at startup in order to guarantee the clock synchronization via the `ptplan` interface), inserting the following content (the rc.local files for the master and slave boards can also be found inside 'Slave/Master_files/openwrt_config/etc' in this repository):
 
-Master board:
+**Master board:**
 ```
 ptp4l -i eth1 -m > /root/ptp4l.log &
 
@@ -431,7 +436,7 @@ beep -f 200 -l 200
 beep -f 700 -l 100 -D 200
 exit 0
 ```
-Slave board:
+**Slave board:**
 ```
 ptp4l -i eth1 -m > /root/ptp4l.log &
 
@@ -469,7 +474,7 @@ exit 0
 reboot
 ```
 
-You can now move to your PC, where we will download and compile the needed software, i.e. LaTe and LTNT test manager.
+**You can now move to your Linux PC**, where we will download and compile the needed software, i.e. **LaTe** and **LTNT test manager**.
 First, download LaTe, from GitHub, and compile it:
 ```
 git clone --recursive https://github.com/francescoraves483/LaMP_LaTe.git
@@ -480,7 +485,7 @@ Then, if the OpenWrt toolchain has been properly installed, you should be able t
 ```
 make compileAPU
 ```
-This will produce the LaTe binary file (called `LaTe`). Transfer this file, using for instance SCP, to both the boards, and place it inside `/root`
+This will produce the LaTe binary file (called `LaTe`), cross-compiled for the APU2 boards (x86_64 platform with *musl* as C standard library). Transfer this file, using for instance SCP, to both the boards, and place it inside `/root`.
 
 Then, download and compile the LTNT test manager, by cloning this GitHub repository:
 ```
@@ -488,23 +493,23 @@ git clone https://github.com/francescoraves483/LTNT.git
 cd LTNT
 cd LTNT_Test_Manager
 ```
-Compile the test manager:
+After cloning the repository and moving to the right directory, compile the test manager:
 ```
 make compileAPU
 ```
-This will produce the LTNT test manager binary file (called `LTNT_test_manager`). Transfer this file, using for instance SCP, to both the boards, and place it inside `/root/LTNT` (after creating the LTNT folder with `cd /root && mkdir LTNT`).
+This will produce the LTNT test manager binary file (called `LTNT_test_manager`). Transfer this file, using for instance SCP, to both the boards, and place it inside `/root/LTNT` (after creating the LTNT folder, for instance by executing `cd /root && mkdir LTNT` inside an active SSH connection with the boards).
 
 Transfer also the `LTNT.ini` configuration file to the master board (**it is required only on the master board**), inside the same folder in which the `LTNT_test_manager` executable is placed.
 
-Remember to launch `chmod +x <executable name>` for both the `LaTe` and `LTNT_test_manager` binary files to enable their execution.
+Remember to launch `chmod +x <executable name>` for both the `LaTe` and `LTNT_test_manager` binary files, after transferring them to the boards (and connecting to the devices via SSH), to enable their execution.
 
 The last step is the configuration of the LTNT test manager as an OpenWrt service on the slave.
 Transfer the following files (found inside this repository) to the slave board:
 
-- "Slave files/openwrt_config/etc/config/LTNT_test_manager_slave" to be placed inside "/etc/config"
-- "Slave files/openwrt_config/etc/init.d/LTNT_test_manager_slave" to be placed inside "/etc/init.d"
+- "Slave_files/openwrt_config/etc/config/LTNT_test_manager_slave" to be placed inside "/etc/config"
+- "Slave_files/openwrt_config/etc/init.d/LTNT_test_manager_slave" to be placed inside "/etc/init.d"
 
-Then, on the slave board, enable the execution of the file inside "init.d":
+Then, **after connecting to the slave board**, enable the execution of the file inside "init.d":
 ```
 chmod +x /etc/init.d/LTNT_test_manager_slave
 ```
@@ -514,7 +519,7 @@ service LTNT_test_manager_slave enable
 service LTNT_test_manager_slave stop
 ```
 
-The service can then be managed with:
+The service can then be managed, on OpenWrt, with:
 1. To make the service start at boot:
 ```
 service LTNT_test_manager_slave enable
@@ -549,28 +554,29 @@ Reboot again the boards. You should now be ready to start testing with LTNT!
 
 # How to launch a test session
 
-In order to launch a new test session, connect to the master device, edit the LTNT.ini file with the desired configuration parameters, and launch the LTNT test master with:
+In order to launch a new test session, connect to the **master device** (**you do not need to control directly the slave device**), edit the LTNT.ini file with the desired configuration parameters, and launch the LTNT test manager with:
 ```
 ./LTNT_test_manager --master
 ```
 
-If you want, instead, to clear all the logs, instead of starting a new test session, both on the master and on the slave board, you can use:
+If you want to clear all the logs, instead of starting a new test session, you can use:
 ```
 ./LTNT_test_manager --master -c
 ```
-This command will ask for confirmation (as clearing the logs is a destructive action) and will make the master delete all its logs, contact the slave, and make also the slave delete all its logs.
+This command will ask for multiple confirmations (as clearing the logs is a **destructive action**) and will make the master delete all its log files. Then, the master will automatically connect to the slave, and make also the slave delete all its log files as soon as it becomes available.
+After this procedure, the master execution will terminate.
 
 In order to launch a test session and then disconnect from SSH, without terminating the tests, you can use:
 ```
 nohup ./LTNT_test_manager --master &
 ```
-All the output of the LTNT test manager will be saved inside the `nohup.out` file, instead of being printed as standard output.
+All the output of the LTNT test manager will be saved inside the `nohup.out` file, which can be later analyzed, instead of being printed as standard output.
 
 # LaTe errors
 
-LaTe errors (from stderr) are automatically saved in log files (named `late_errors_******.log`), inside the same folder from which the LTNT test manager is launched.
-These files are cleared when calling `./LTNT_test_manager --master -c`.
+LaTe errors (from *stderr*) are automatically saved in log files (named `late_errors_<test_type>.log`), inside the same folder from which the LTNT test manager is launched.
+These files are cleared when calling `./LTNT_test_manager --master -c`. If you want to analyze them, remember to save them together with the logs before performing any "clear" operation.
 
-# External libraries
+# External libraries used in this project
 
-The LTNT test manager, in order to parse the INI configuration file, includes the INIH library by Ben Hoyt, licensed under the New BSD license: [INIH GitHub repository](https://github.com/benhoyt/inih)
+The LTNT test manager, in order to parse the INI configuration file, includes the **INIH library by Ben Hoyt**, licensed under the New BSD license: [INIH GitHub repository](https://github.com/benhoyt/inih)
