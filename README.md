@@ -407,7 +407,7 @@ config timeserver 'ntp'
 
 **Master board:**
 ```
-ptp4l -i eth1 -m > /root/ptp4l.log &
+ptp4l -i eth1 -m --use_syslog=0 > /root/ptp4l.log &
 
 beep -f 500
 phc2sys -s /dev/ptp1 -w -m -S 1 > /root/phc2sys_initial.log &
@@ -430,7 +430,7 @@ done
 sleep 5
 killall -9 phc2sys
 
-phc2sys -s /dev/ptp1 -w -m > /root/phc2sys.log &
+phc2sys -s /dev/ptp1 -w -m --use_syslog=0 > /root/phc2sys.log &
 beep -f 200 -l 200
 beep -f 700 -l 100 -D 200
 beep -f 200 -l 200
@@ -441,7 +441,7 @@ exit 0
 ```
 **Slave board:**
 ```
-ptp4l -i eth1 -m > /root/ptp4l.log &
+ptp4l -i eth1 -m --use_syslog=0 > /root/ptp4l.log &
 
 beep -f 500
 phc2sys -s /dev/ptp1 -w -m -S 1 > /root/phc2sys_initial.log &
@@ -464,7 +464,7 @@ done
 sleep 5
 killall -9 phc2sys
 
-phc2sys -s /dev/ptp1 -w -m > /root/phc2sys.log &
+phc2sys -s /dev/ptp1 -w -m --use_syslog=0 > /root/phc2sys.log &
 
 beep -f 700 -l 200 -D 200
 beep -f 700 -l 200 -D 200
