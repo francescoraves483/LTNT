@@ -17,6 +17,7 @@
 #include <sys/types.h>
 #include <sys/time.h>
 #include <sys/types.h>
+#include <sys/stat.h>
 #include <sys/wait.h>
 #include <time.h>
 #include <unistd.h>
@@ -52,13 +53,8 @@ typedef struct {
 	char *logs_unidir_DL_dir_str;
 	char *logs_iperf_UL_dir_str;
 	char *logs_iperf_DL_dir_str;
+	char *logs_ping_dir_str;
 } logdirnames_t;
-
-typedef struct {
-	bool specified; 
-	char *filename; // Can be set to 'NULL' to avoid specifying a particular file; in this case the value of 'append' will be ignored
-	bool append; // If 'true', data will be appended to the file, if 'false' it will not
-} fileprop_t;
 
 // Function prototypes
 static int millisleep(int sleep_ms);
@@ -240,6 +236,13 @@ static int rmlogs(logdirnames_t *logdirnames) {
 		}
 		rm_retval_accum+=rm_retval;
 
+		if((rm_retval=remove("ping_errors.log"))<0) {
+			fprintf(stderr,"Error: cannot remove file %s. Details: %s.\n","ping_errors.log",strerror(errno));
+		} else {
+			fprintf(stdout,"Successfully removed file: %s\n","ping_errors.log");
+		}
+		rm_retval_accum+=rm_retval;
+
 		if((rm_retval=rmdir_nonempty(logdirnames->logs_bidir_dir_str))<0) {
 			fprintf(stderr,"Error: cannot remove logs directory: %s. Details: %s.\n",logdirnames->logs_bidir_dir_str,strerror(errno));
 		} else {
@@ -274,6 +277,13 @@ static int rmlogs(logdirnames_t *logdirnames) {
 			fprintf(stdout,"Successfully removed logs directory: %s\n",logdirnames->logs_iperf_DL_dir_str);
 		}
 		rm_retval_accum+=rm_retval;
+
+		if((rm_retval=rmdir_nonempty(logdirnames->logs_ping_dir_str))<0) {
+			fprintf(stderr,"Error: cannot remove logs directory: %s. Details: %s.\n",logdirnames->logs_ping_dir_str,strerror(errno));
+		} else {
+			fprintf(stdout,"Successfully removed logs directory: %s\n",logdirnames->logs_ping_dir_str);
+		}
+		rm_retval_accum+=rm_retval;
 	}
 
 	return rm_retval_accum;
@@ -304,16 +314,18 @@ static int createlogdirs(struct configuration configs, logdirnames_t *logdirname
 	size_t logs_unidir_DL_dir_str_size=strlen(configs.logs_late_unidir_DL)+strlen(configs.test_log_dir)+1;
 	size_t logs_iperf_UL_dir_str_size=strlen(configs.logs_iperf_UL)+strlen(configs.test_log_dir)+1;
 	size_t logs_iperf_DL_dir_str_size=strlen(configs.logs_iperf_DL)+strlen(configs.test_log_dir)+1;
+	size_t logs_ping_str_size=strlen(configs.logs_ping)+strlen(configs.test_log_dir)+1;
 
 	logdirnames->logs_bidir_dir_str=malloc(logs_bidir_dir_str_size*sizeof(char));
 	logdirnames->logs_unidir_UL_dir_str=malloc(logs_unidir_UL_dir_str_size*sizeof(char));
 	logdirnames->logs_unidir_DL_dir_str=malloc(logs_unidir_DL_dir_str_size*sizeof(char));
 	logdirnames->logs_iperf_UL_dir_str=malloc(logs_iperf_UL_dir_str_size*sizeof(char));
 	logdirnames->logs_iperf_DL_dir_str=malloc(logs_iperf_DL_dir_str_size*sizeof(char));
+	logdirnames->logs_ping_dir_str=malloc(logs_ping_str_size*sizeof(char));
 
 	int mkdir_rval=0;
 	
-	if(!logdirnames->logs_bidir_dir_str || !logdirnames->logs_unidir_UL_dir_str || !logdirnames->logs_unidir_DL_dir_str || !logdirnames->logs_iperf_UL_dir_str || !logdirnames->logs_iperf_DL_dir_str) {
+	if(!logdirnames->logs_bidir_dir_str || !logdirnames->logs_unidir_UL_dir_str || !logdirnames->logs_unidir_DL_dir_str || !logdirnames->logs_iperf_UL_dir_str || !logdirnames->logs_iperf_DL_dir_str || !logdirnames->logs_ping_dir_str) {
 		fprintf(stderr,"Error: cannot allocate memory to store the name of the logs directories.\n");
 		return ERR_MALLOC;
 	}
@@ -323,12 +335,14 @@ static int createlogdirs(struct configuration configs, logdirnames_t *logdirname
 	strncpy(logdirnames->logs_unidir_DL_dir_str,configs.test_log_dir,logs_unidir_DL_dir_str_size-1);
 	strncpy(logdirnames->logs_iperf_UL_dir_str,configs.test_log_dir,logs_iperf_UL_dir_str_size-1);
 	strncpy(logdirnames->logs_iperf_DL_dir_str,configs.test_log_dir,logs_iperf_DL_dir_str_size-1);
+	strncpy(logdirnames->logs_ping_dir_str,configs.test_log_dir,logs_ping_str_size-1);
 
 	strncat(logdirnames->logs_bidir_dir_str,configs.logs_late_bidir,logs_bidir_dir_str_size-1);
 	strncat(logdirnames->logs_unidir_UL_dir_str,configs.logs_late_unidir_UL,logs_unidir_UL_dir_str_size-1);
 	strncat(logdirnames->logs_unidir_DL_dir_str,configs.logs_late_unidir_DL,logs_unidir_DL_dir_str_size-1);
 	strncat(logdirnames->logs_iperf_UL_dir_str,configs.logs_iperf_UL,logs_iperf_UL_dir_str_size-1);
 	strncat(logdirnames->logs_iperf_DL_dir_str,configs.logs_iperf_DL,logs_iperf_DL_dir_str_size-1);
+	strncat(logdirnames->logs_ping_dir_str,configs.logs_ping,logs_ping_str_size-1);
 
 	// Accumulating the error values to understand if any error occurred at any of the mklogdir() calls
 	// If no error occurs, mkdir_rval should remain equal to 0
@@ -337,6 +351,7 @@ static int createlogdirs(struct configuration configs, logdirnames_t *logdirname
 	mkdir_rval+=mklogdir(logdirnames->logs_unidir_DL_dir_str);
 	mkdir_rval+=mklogdir(logdirnames->logs_iperf_UL_dir_str);
 	mkdir_rval+=mklogdir(logdirnames->logs_iperf_DL_dir_str);
+	mkdir_rval+=mklogdir(logdirnames->logs_ping_dir_str);
 
 	if(mkdir_rval!=0) {
 		fprintf(stderr,"Error: cannot create the required log directories.\n");
@@ -353,6 +368,7 @@ static void freelogdirs(logdirnames_t *logdirnames) {
 		if(logdirnames->logs_unidir_DL_dir_str) free(logdirnames->logs_unidir_DL_dir_str);
 		if(logdirnames->logs_iperf_UL_dir_str) free(logdirnames->logs_iperf_UL_dir_str);
 		if(logdirnames->logs_iperf_DL_dir_str) free(logdirnames->logs_iperf_DL_dir_str);
+		if(logdirnames->logs_ping_dir_str) free(logdirnames->logs_ping_dir_str);
 	}
 }
 
@@ -950,12 +966,54 @@ int main (int argc, char **argv) {
 					late_pids[UNIDIR_UL_IDX],late_payloads[payload_lengths_idx],
 					late_pids[UNIDIR_DL_IDX],late_payloads[payload_lengths_idx]);
 
+				// Start also ping, if required through the -p option
+				pid_t ping_pid=0;
+
+				if(opts.add_ping==true) {
+					gettimeofday(&now,NULL);
+					fprintf(stdout,"Starting ping (RTT: master<->slave) @ %lu...\n",now.tv_sec);
+
+					if((ping_pid=fork())<0) {
+						fprintf(stderr,"Error: cannot spawn ping process.\n");
+					} else if(ping_pid==0) {
+						close(udp_sockd);
+						close(tcp_sockd);
+
+						// Child work (exec) - we can reuse the variable "latecmdstr"
+						snprintf(latecmdstr,LATE_CMD_STR_MAX_SIZE,"/usr/bin/ping -i %lf -s %d %s >1 %s/ping_log_%lu.txt >a2 ping_errors.log",
+							((double) configs.ping_periodicity_ms)/1000.0,
+							late_payloads[payload_lengths_idx]+24,
+							configs.ip_data_remote,
+							logdirnames.logs_ping_dir_str,
+							now_begin.tv_sec);
+						if(exect(latecmdstr)<0) {
+							fprintf(stderr,"Error: cannot spawn ping process (master). exect() error.\n");
+						}
+					}
+				}
+
 				pid_t wpid;
 				int pstatus;
+				int terminated_instances=0;
 
 				// Wait for all the children to finish
 				while((wpid=wait(&pstatus))>0) {
 					fprintf(stdout,"LaTe process with PID %d terminated. Status: %d\n",wpid,WEXITSTATUS(pstatus));
+
+					if(opts.add_ping==true) {
+						if(wpid==late_pids[BIDIR_IDX]) {
+							terminated_instances++;
+						} else if(wpid==late_pids[UNIDIR_UL_IDX]) {
+							terminated_instances++;
+						} else if(wpid==late_pids[UNIDIR_DL_IDX]) {
+							terminated_instances++;
+						}
+
+						if(terminated_instances==3) {
+							break;
+						}
+					}
+
 					if(WEXITSTATUS(pstatus)!=0) {
 						if(wpid==late_pids[BIDIR_IDX]) {
 							errors.late_bidir++;
@@ -967,6 +1025,14 @@ int main (int argc, char **argv) {
 							fprintf(stderr,"Error: LTNT was waiting for an unknown process with PID %d.\n",wpid);
 						}
 					}
+				}
+
+				// Kill ping, if it was started
+				if(opts.add_ping==true) {
+					kill(ping_pid,SIGKILL);
+					waitpid(iperf_pid,&pstatus,0);
+
+					fprintf(stdout,"ping %d terminated. Status: %d\n",wpid,WEXITSTATUS(pstatus));
 				}
 
 				sendtcpctrlpkt_rval=send_tcp_ctrl_packet(tcp_sockd,tcp_ctrl_master_late_terminated,sizeof(tcp_ctrl_master_late_terminated),"LTNT_SLAVE_LATE_TERMINATED");

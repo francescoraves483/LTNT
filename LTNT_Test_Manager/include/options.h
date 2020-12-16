@@ -7,7 +7,7 @@
 // Valid options
 // Any new option should be handled in the switch-case inside parse_options() and the corresponding char should be added to VALID_OPTS
 // If an option accepts an additional argument, it is followed by ':'
-#define VALID_OPTS "hvcf:smS:T"
+#define VALID_OPTS "hvcf:psmS:T"
 
 // Slave discovery/control port and other options
 #define UDP_DISC_TCP_CTRL_PORT 65500
@@ -66,11 +66,13 @@
 	CFG("LaTe", late_mean_periodicity, int, 50) \
 	CFG("LaTe", late_periodicity_batch, int, 10) \
 	CFG("LaTe", late_sleep_between_clients_ms, int, 100) \
+	CFG("ping", ping_periodicity_ms, int, 50) \
 	CFG("Log directory names", logs_late_bidir, char *, "Logs_bidir") \
 	CFG("Log directory names", logs_late_unidir_UL, char *, "Logs_unidir_UL") \
 	CFG("Log directory names", logs_late_unidir_DL, char *, "Logs_unidir_DL") \
 	CFG("Log directory names", logs_iperf_UL, char *, "Logs_iperf_UL") \
-	CFG("Log directory names", logs_iperf_DL, char *, "Logs_iperf_DL")
+	CFG("Log directory names", logs_iperf_DL, char *, "Logs_iperf_DL") \
+	CFG("Log directory names", logs_ping, char *, "Logs_ping")
 
 typedef enum {
 	LTNT_OPMODE_UNSET,
@@ -98,6 +100,7 @@ struct options {
 	// True/false options
 	bool clear_logs;
 	bool terminate_on_error;
+	bool add_ping;
 
 	// Interface options (slave only)
 	char *slave_control_interface;

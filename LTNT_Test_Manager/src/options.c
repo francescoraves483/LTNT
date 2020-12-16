@@ -17,6 +17,7 @@
 
 #define LONGOPT_c "clear-logs"
 #define LONGOPT_f "config-file"
+#define LONGOPT_p "add-ping"
 #define LONGOPT_S "control-interface"
 #define LONGOPT_T "terminate-on-error"
 #define LONGOPT_h "help"
@@ -30,6 +31,7 @@ static const struct option late_long_opts[]={
 	{LONGOPT_v,			no_argument, 		NULL, 'v'},
 	{LONGOPT_c,			no_argument, 		NULL, 'c'},
 	{LONGOPT_f,			required_argument, 	NULL, 'f'},
+	{LONGOPT_p,			no_argument, 		NULL, 'p'},
 	{LONGOPT_m,			no_argument, 		NULL, 'm'},
 	{LONGOPT_s,			no_argument, 		NULL, 's'},
 	{LONGOPT_S,			required_argument,	NULL, 'S'},
@@ -41,7 +43,7 @@ static const struct option late_long_opts[]={
 // Option strings: defined here the description for each option to be then included inside print_long_info()
 #define OPT_c_description \
 	LONGOPT_STR_CONSTRUCTOR(LONGOPT_c) \
-	"  -c: Maste only option. Do not start an actual test but clear all the log files, also on\n" \
+	"  -c: Master only option. Do not start an actual test but clear all the log files, also on\n" \
 	"\t  the slave when it is discovered."
 
 #define OPT_f_description \
@@ -57,6 +59,10 @@ static const struct option late_long_opts[]={
 	"  -T: Normally, LTNT works in \"daemon\" mode, i.e. after a failure, the master/slave will start\n" \
 	"\t  its execution again, without any intervention of the user. This option can be used to make\n" \
 	"\t  LTNT terminate its execution in case an error (not related to LaTe/iperf connectivity) occurs.\n"
+
+#define OPT_p_description \
+	LONGOPT_STR_CONSTRUCTOR(LONGOPT_p) \
+	"  -p: Test also with 'ping', in parallel to all the LaTe tests.\n" \
 
 static char *ltnt_strdup(const char *src) {
 	char *res=malloc(strlen(src)+1);
@@ -81,6 +87,7 @@ static void print_long_info(void) {
 		"[options]:\n"
 		OPT_c_description
 		OPT_f_description
+		OPT_p_description
 		OPT_S_description
 		OPT_T_description
 
@@ -148,6 +155,7 @@ void options_initialize(struct options *options) {
 
 	options->clear_logs=false;
 	options->terminate_on_error=false;
+	options->add_ping=false;
 
 	options->slave_control_interface=NULL;
 
@@ -195,6 +203,10 @@ unsigned int parse_options(int argc, char **argv, struct options *options) {
 					return 1;
 				}
 				options->config_filename_specified=true;
+				break;
+
+			case 'p':
+				options->add_ping=true;
 				break;
 
 			case 'm':
@@ -277,6 +289,10 @@ unsigned int parse_options(int argc, char **argv, struct options *options) {
 		fprintf(stderr,"Error: -c | --clear-logs is a master only option.\n"
 			"The master will then instruct the slave to clear the log files.\n");
 		return 1;
+	}
+
+	if(options->opmode==LTNT_OPMODE_SLAVE && options->add_ping==true) {
+		fprintf(stderr,"Warning: -p | --add-ping will have no effect when launching the slave.\n");
 	}
 
 	if(options->opmode==LTNT_OPMODE_SLAVE && options->slave_control_interface==NULL) {
