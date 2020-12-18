@@ -968,8 +968,12 @@ int main (int argc, char **argv) {
 
 				// Start also ping, if required through the -p option
 				pid_t ping_pid=0;
+				int terminated_instances;
 
 				if(opts.add_ping==true) {
+					// Already setting here this varibile to 0 - it will be needed later on (and it should be set to 0 at each loop iteration)
+					terminated_instances=0;
+
 					gettimeofday(&now,NULL);
 					fprintf(stdout,"Starting ping (RTT: master<->slave) @ %lu...\n",now.tv_sec);
 
@@ -985,7 +989,7 @@ int main (int argc, char **argv) {
 							late_payloads[payload_lengths_idx]+24,
 							configs.ip_data_remote,
 							logdirnames.logs_ping_dir_str,
-							now_begin.tv_sec);
+							now.tv_sec);
 						if(exect(latecmdstr)<0) {
 							fprintf(stderr,"Error: cannot spawn ping process (master). exect() error.\n");
 						}
@@ -994,7 +998,6 @@ int main (int argc, char **argv) {
 
 				pid_t wpid;
 				int pstatus;
-				int terminated_instances=0;
 
 				// Wait for all the children to finish
 				while((wpid=wait(&pstatus))>0) {
@@ -1030,9 +1033,9 @@ int main (int argc, char **argv) {
 				// Kill ping, if it was started
 				if(opts.add_ping==true) {
 					kill(ping_pid,SIGKILL);
-					waitpid(iperf_pid,&pstatus,0);
+					waitpid(ping_pid,&pstatus,0);
 
-					fprintf(stdout,"ping %d terminated. Status: %d\n",wpid,WEXITSTATUS(pstatus));
+					fprintf(stdout,"ping %d terminated. Status: %d\n",ping_pid,WEXITSTATUS(pstatus));
 				}
 
 				sendtcpctrlpkt_rval=send_tcp_ctrl_packet(tcp_sockd,tcp_ctrl_master_late_terminated,sizeof(tcp_ctrl_master_late_terminated),"LTNT_SLAVE_LATE_TERMINATED");
