@@ -50,7 +50,7 @@ Thus, the **full LTNT platform** is composed by:
 To resume, in order to perform the network measurements, the user can rely on:
 - The _full LTNT platform_ (software + PC Engines hardware + OpenWrt), which is the suggested and tested option - the **steps** described below refer to the **full LTNT platform**
 - Only the _LTNT software components_ (iPerf, LaTe, a clock synchronization package, LTNT test manager), with other devices respecting the minimum requirements and configuration mentioned above and running a Linux OS - the user, in this case, will have to properly configure these devices, taking as reference the steps described below (however, the same steps may change significantly depending on the hardware configuration and, especially, on the selected OS; for instance, if you decide to use two Ubuntu PCs, you do not need to prepare another OS, like OpenWrt, and flash it somewhere and you do not need to cross-compile anything, as you can directly compile both _LTNT_test_manager_ and _LaTe_).
-When relying on this option, the user should set the `exec_path_late` and `exec_path_iperf` options in LTNT.ini with the correct paths on where the LaTe executable has been compiled and on where iperf has been installed (the user can find this out with the command `which iperf`).
+When relying on this option, the user should set the `exec_path_late` and `exec_path_iperf` options in LTNT.ini with the correct paths in which the LaTe executable has been compiled and in which iperf has been installed (the user can find this out with the command `which iperf`).
 
 # How does LTNT work?
 

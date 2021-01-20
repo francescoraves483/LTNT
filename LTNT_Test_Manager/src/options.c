@@ -35,7 +35,7 @@ static const struct option late_long_opts[]={
 	{LONGOPT_m,			no_argument, 		NULL, 'm'},
 	{LONGOPT_s,			no_argument, 		NULL, 's'},
 	{LONGOPT_S,			required_argument,	NULL, 'S'},
-	{LONGOPT_S,			no_argument,		NULL, 'T'},
+	{LONGOPT_T,			no_argument,		NULL, 'T'},
 	{NULL, 0, NULL, 0}
 };
 
