@@ -44,7 +44,7 @@ static const struct option late_long_opts[]={
 #define OPT_c_description \
 	LONGOPT_STR_CONSTRUCTOR(LONGOPT_c) \
 	"  -c: Master only option. Do not start an actual test but clear all the log files, also on\n" \
-	"\t  the slave when it is discovered."
+	"\t  the slave when it is discovered.\n"
 
 #define OPT_f_description \
 	LONGOPT_STR_CONSTRUCTOR(LONGOPT_f) \
