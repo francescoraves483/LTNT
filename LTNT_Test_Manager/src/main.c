@@ -7,6 +7,7 @@
 #include <arpa/inet.h>
 #include <dirent.h> 
 #include <errno.h>
+#include <limits.h>
 #include <linux/if.h>
 #include <poll.h>
 #include <signal.h>
@@ -195,6 +196,10 @@ static int rmdir_nonempty(char *path) {
 
 	dirp=opendir(path);
 
+	if(dirp==NULL) {
+		return -ENOENT;
+	}
+
 	while((dir=readdir(dirp))!=NULL) {
 		if(strcmp(dir->d_name,".")!=0 && strcmp(dir->d_name,"..")!=0) {
 			snprintf(file_path,4096,"%s/%s",path,dir->d_name);
@@ -307,7 +312,7 @@ static int mklogdir(char *dirpath) {
 	return errno;
 }
 
-static int createlogdirs(struct configuration configs, logdirnames_t *logdirnames) {
+static int alloclogdirnames(struct configuration configs, logdirnames_t *logdirnames) {
 	// Create the required directories
 	size_t logs_bidir_dir_str_size=strlen(configs.logs_late_bidir)+strlen(configs.test_log_dir)+1;
 	size_t logs_unidir_UL_dir_str_size=strlen(configs.logs_late_unidir_UL)+strlen(configs.test_log_dir)+1;
@@ -322,8 +327,6 @@ static int createlogdirs(struct configuration configs, logdirnames_t *logdirname
 	logdirnames->logs_iperf_UL_dir_str=malloc(logs_iperf_UL_dir_str_size*sizeof(char));
 	logdirnames->logs_iperf_DL_dir_str=malloc(logs_iperf_DL_dir_str_size*sizeof(char));
 	logdirnames->logs_ping_dir_str=malloc(logs_ping_str_size*sizeof(char));
-
-	int mkdir_rval=0;
 	
 	if(!logdirnames->logs_bidir_dir_str || !logdirnames->logs_unidir_UL_dir_str || !logdirnames->logs_unidir_DL_dir_str || !logdirnames->logs_iperf_UL_dir_str || !logdirnames->logs_iperf_DL_dir_str || !logdirnames->logs_ping_dir_str) {
 		fprintf(stderr,"Error: cannot allocate memory to store the name of the logs directories.\n");
@@ -344,17 +347,28 @@ static int createlogdirs(struct configuration configs, logdirnames_t *logdirname
 	strncat(logdirnames->logs_iperf_DL_dir_str,configs.logs_iperf_DL,logs_iperf_DL_dir_str_size-1);
 	strncat(logdirnames->logs_ping_dir_str,configs.logs_ping,logs_ping_str_size-1);
 
-	// Accumulating the error values to understand if any error occurred at any of the mklogdir() calls
-	// If no error occurs, mkdir_rval should remain equal to 0
-	mkdir_rval+=mklogdir(logdirnames->logs_bidir_dir_str);
-	mkdir_rval+=mklogdir(logdirnames->logs_unidir_UL_dir_str);
-	mkdir_rval+=mklogdir(logdirnames->logs_unidir_DL_dir_str);
-	mkdir_rval+=mklogdir(logdirnames->logs_iperf_UL_dir_str);
-	mkdir_rval+=mklogdir(logdirnames->logs_iperf_DL_dir_str);
-	mkdir_rval+=mklogdir(logdirnames->logs_ping_dir_str);
+	return ERR_OK;
+}
 
-	if(mkdir_rval!=0) {
-		fprintf(stderr,"Error: cannot create the required log directories.\n");
+static int createlogdirs(logdirnames_t *logdirnames) {
+	int mkdir_rval=0;
+
+	if(logdirnames!=NULL) {
+		// Accumulating the error values to understand if any error occurred at any of the mklogdir() calls
+		// If no error occurs, mkdir_rval should remain equal to 0
+		mkdir_rval+=mklogdir(logdirnames->logs_bidir_dir_str);
+		mkdir_rval+=mklogdir(logdirnames->logs_unidir_UL_dir_str);
+		mkdir_rval+=mklogdir(logdirnames->logs_unidir_DL_dir_str);
+		mkdir_rval+=mklogdir(logdirnames->logs_iperf_UL_dir_str);
+		mkdir_rval+=mklogdir(logdirnames->logs_iperf_DL_dir_str);
+		mkdir_rval+=mklogdir(logdirnames->logs_ping_dir_str);
+
+		if(mkdir_rval!=0) {
+			fprintf(stderr,"Error: cannot create the required log directories.\n");
+			return ERR_MKDIR_LOGS_DIR;
+		}
+	} else {
+		fprintf(stderr,"Error: NULL directory names passed to createlogdirs().\n");
 		return ERR_MKDIR_LOGS_DIR;
 	}
 
@@ -503,6 +517,9 @@ int main (int argc, char **argv) {
 	char iperfcmdstr[IPERF_CMD_STR_MAX_SIZE]={0};
 	char latecmdstr[LATE_CMD_STR_MAX_SIZE]={0};
 
+	// LaTe and iperf path string buffer
+	char execpathstr[PATH_MAX]={0};
+
 	// LaTe payload length array index
 	int payload_lengths_idx;
 
@@ -536,12 +553,6 @@ int main (int argc, char **argv) {
 		if((late_payloads=config_late_payloads_to_array(configs.late_payload_sizes,&late_payloads_size))==NULL) {
 			retval=ERR_CONFIG;
 			goto main_error;
-		}
-
-		// Create the "Logs" directories
-		if(createlogdirs(configs,&logdirnames)!=ERR_OK) {
-			retval=ERR_CONFIG;
-			goto main_error;	
 		}
 
 		// Check if parameters are consistent
@@ -582,7 +593,13 @@ int main (int argc, char **argv) {
 			goto main_error;
 		}
 
-			// Clear logs mode: just clear the logs, without executing an actual slave or master
+		// Allocate the strings for the log directory names
+		if(alloclogdirnames(configs,&logdirnames)!=ERR_OK) {
+			retval=ERR_MALLOC;
+			goto main_error;	
+		}
+
+		// Clear logs mode: just clear the logs, without executing an actual slave or master
 		if(opts.clear_logs==true) {
 			char enter=0;
 			int enter_cnt=2;
@@ -603,19 +620,26 @@ int main (int argc, char **argv) {
 
 			rmlogs(&logdirnames);
 		}
+
+		if(snprintf(execpathstr,PATH_MAX,"%s/LaTe",configs.exec_path_late)>0 && access(execpathstr,F_OK)==-1) {
+			fprintf(stderr,"Error: LaTe is missing! Please check if the LaTe executable is available in %s.\n",configs.exec_path_late);
+			retval=ERR_LATE_NOT_FOUND;
+			goto main_error;
+		}
+
+		if(snprintf(execpathstr,PATH_MAX,"%s/iperf",configs.exec_path_iperf)>0 && access(execpathstr,F_OK)==-1) {
+			fprintf(stderr,"Error: iperf is missing! Please check if the iperf executable is available in %s.\n",configs.exec_path_iperf);
+			retval=ERR_IPERF_NOT_FOUND;
+			goto main_error;
+		}
 	}
 
-
-	if(access("/root/LaTe",F_OK)==-1) {
-		fprintf(stderr,"Error: LaTe is missing! Please check if the LaTe executable is available in /root.\n");
-		retval=ERR_LATE_NOT_FOUND;
-		goto main_error;
-	}
-
-	if(access("/usr/bin/iperf",F_OK)==-1) {
-		fprintf(stderr,"Error: bash is missing! Please check if the bash executable is available in /usr/bin.\n");
-		retval=ERR_IPERF_NOT_FOUND;
-		goto main_error;
+	if(opts.opmode==LTNT_OPMODE_MASTER && opts.clear_logs==false) {
+		// Create the "Logs" directories
+		if(createlogdirs(&logdirnames)!=ERR_OK) {
+			retval=ERR_CONFIG;
+			goto main_error;	
+		}
 	}
 
 	do {
@@ -877,8 +901,9 @@ int main (int argc, char **argv) {
 					close(tcp_sockd);
 
 					// Child work (exec)
-					snprintf(latecmdstr,LATE_CMD_STR_MAX_SIZE,"/root/LaTe -s -u -p %d -t 10000 -S %s -W %s/LaTe_unidir_DL_P_%d_%lu_perpkt "
+					snprintf(latecmdstr,LATE_CMD_STR_MAX_SIZE,"%s/LaTe -s -u -p %d -t 10000 -S %s -W %s/LaTe_unidir_DL_P_%d_%lu_perpkt "
 						"-X mnrp --initial-timeout >1 /dev/null >a2 late_errors_unidir_DL.log",
+						configs.exec_path_late,
 						configs.port_late_unidir_DL,
 						configs.test_interface,
 						logdirnames.logs_unidir_DL_dir_str,late_payloads[payload_lengths_idx],now.tv_sec);
@@ -913,8 +938,9 @@ int main (int argc, char **argv) {
 					close(tcp_sockd);
 
 					// Child work (exec)
-					snprintf(latecmdstr,LATE_CMD_STR_MAX_SIZE,"/root/LaTe -c %s -u -B -P %d -t %d -R e%d,%d -i %d -p %d -T 10000 -S %s "
+					snprintf(latecmdstr,LATE_CMD_STR_MAX_SIZE,"%s/LaTe -c %s -u -B -P %d -t %d -R e%d,%d -i %d -p %d -T 10000 -S %s "
 						"-W %s/LaTe_bidir_P_%d_%lu_perpkt -X mnrp -f %s/LaTe_bidir_%lu_final >1 /dev/null >a2 late_errors_bidir.log",
+						configs.exec_path_late,
 						configs.ip_data_remote,
 						late_payloads[payload_lengths_idx],
 						configs.late_min_periodicity,
@@ -943,8 +969,9 @@ int main (int argc, char **argv) {
 					close(tcp_sockd);
 
 					// Child work (exec)
-					snprintf(latecmdstr,LATE_CMD_STR_MAX_SIZE,"/root/LaTe -c %s -u -U -P %d -t %d -R e%d,%d -i %d -p %d -T 10000 -S %s "
+					snprintf(latecmdstr,LATE_CMD_STR_MAX_SIZE,"%s/LaTe -c %s -u -U -P %d -t %d -R e%d,%d -i %d -p %d -T 10000 -S %s "
 						"-f %s/LaTe_unidir_UL_%lu_final >1 /dev/null >a2 late_errors_unidir_UL.log",
+						configs.exec_path_late,
 						configs.ip_data_remote,
 						late_payloads[payload_lengths_idx],
 						configs.late_min_periodicity,
@@ -968,7 +995,7 @@ int main (int argc, char **argv) {
 
 				// Start also ping, if required through the -p option
 				pid_t ping_pid=0;
-				int terminated_instances;
+				int terminated_instances=0;
 
 				if(opts.add_ping==true) {
 					// Already setting here this varibile to 0 - it will be needed later on (and it should be set to 0 at each loop iteration)
@@ -1075,7 +1102,8 @@ int main (int argc, char **argv) {
 					close(tcp_sockd);
 
 					// Child work (exec)
-					snprintf(iperfcmdstr,IPERF_CMD_STR_MAX_SIZE,"/usr/bin/iperf -s %s -i 1 -p %d -l %s -y C >1 %s/iperf_throughput_%s_%lu.csv",
+					snprintf(iperfcmdstr,IPERF_CMD_STR_MAX_SIZE,"%s/iperf -s %s -i 1 -p %d -l %s -y C >1 %s/iperf_throughput_%s_%lu.csv",
+						configs.exec_path_iperf,
 						iperf_tcp==true ? "" : "-u",
 						configs.port_iperf,
 						iperf_tcp==true ? configs.TCP_iperf_buf_len : configs.UDP_iperf_packet_len,
@@ -1157,7 +1185,8 @@ int main (int argc, char **argv) {
 					close(tcp_sockd);
 
 					// Child work (exec)
-					snprintf(iperfcmdstr,IPERF_CMD_STR_MAX_SIZE,"/usr/bin/iperf -c %s %s -p %d -l %s -i 1 -t %d -b 1G >1 /dev/null >2 /dev/null",
+					snprintf(iperfcmdstr,IPERF_CMD_STR_MAX_SIZE,"%s/iperf -c %s %s -p %d -l %s -i 1 -t %d -b 1G >1 /dev/null >2 /dev/null",
+						configs.exec_path_iperf,
 						configs.ip_data_remote,
 						iperf_tcp==true ? "" : "-u -P 3",
 						configs.port_iperf,
@@ -1420,7 +1449,25 @@ int main (int argc, char **argv) {
 						#undef CFG
 						&junk);
 
-					if(createlogdirs(configs,&logdirnames)!=ERR_OK) {
+					if(snprintf(execpathstr,PATH_MAX,"%s/LaTe",configs.exec_path_late)>0 && access(execpathstr,F_OK)==-1) {
+						fprintf(stderr,"Error: LaTe is missing! Please check if the LaTe executable is available in %s.\n",configs.exec_path_late);
+						retval=ERR_LATE_NOT_FOUND;
+						goto slave_error;
+					}
+
+					if(snprintf(execpathstr,PATH_MAX,"%s/iperf",configs.exec_path_iperf)>0 && access(execpathstr,F_OK)==-1) {
+						fprintf(stderr,"Error: iperf is missing! Please check if the iperf executable is available in %s.\n",configs.exec_path_iperf);
+						retval=ERR_IPERF_NOT_FOUND;
+						goto slave_error;
+					}
+
+					// Allocate the strings for the log directory names
+					if(alloclogdirnames(configs,&logdirnames)!=ERR_OK) {
+						retval=ERR_MALLOC;
+						goto slave_error;	
+					}
+
+					if(createlogdirs(&logdirnames)!=ERR_OK) {
 						fprintf(stderr,"Error: the slave cannot create the log directories.\n");
 						retval=ERR_CONFIG;
 						goto slave_error;	
@@ -1504,8 +1551,9 @@ int main (int argc, char **argv) {
 					close(tcp_sockd);
 					close(listen_tcpsockd);
 					// Child work (exec)
-					snprintf(latecmdstr,LATE_CMD_STR_MAX_SIZE,"/root/LaTe -s -u -p %d -t 10000 -S %s -W %s/LaTe_bidir_P_%d_%lu_perpkt "
+					snprintf(latecmdstr,LATE_CMD_STR_MAX_SIZE,"%s/LaTe -s -u -p %d -t 10000 -S %s -W %s/LaTe_bidir_P_%d_%lu_perpkt "
 						"-X mnrp --initial-timeout >1 /dev/null >a2 late_errors_bidir.log",
+						configs.exec_path_late,
 						configs.port_late_bidir,
 						configs.test_interface,
 						logdirnames.logs_bidir_dir_str,late_payloads[payload_lengths_idx],now.tv_sec);
@@ -1527,8 +1575,9 @@ int main (int argc, char **argv) {
 					close(listen_tcpsockd);
 
 					// Child work (exec)
-					snprintf(latecmdstr,LATE_CMD_STR_MAX_SIZE,"/root/LaTe -s -u -p %d -t 10000 -S %s -W %s/LaTe_unidir_UL_P_%d_%lu_perpkt "
+					snprintf(latecmdstr,LATE_CMD_STR_MAX_SIZE,"%s/LaTe -s -u -p %d -t 10000 -S %s -W %s/LaTe_unidir_UL_P_%d_%lu_perpkt "
 						"-X mnrp --initial-timeout >1 /dev/null >a2 late_errors_unidir_UL.log",
+						configs.exec_path_late,
 						configs.port_late_unidir_UL,
 						configs.test_interface,
 						logdirnames.logs_unidir_UL_dir_str,late_payloads[payload_lengths_idx],now.tv_sec);
@@ -1562,8 +1611,9 @@ int main (int argc, char **argv) {
 					close(listen_tcpsockd);
 
 					// Child work (exec)
-					snprintf(latecmdstr,LATE_CMD_STR_MAX_SIZE,"/root/LaTe -c %s -u -U -P %d -t %d -R e%d,%d -i %d -p %d -T 10000 -S %s "
+					snprintf(latecmdstr,LATE_CMD_STR_MAX_SIZE,"%s/LaTe -c %s -u -U -P %d -t %d -R e%d,%d -i %d -p %d -T 10000 -S %s "
 						"-f %s/LaTe_unidir_DL_%lu_final >1 /dev/null >a2 late_errors_unidir_DL.log",
+						configs.exec_path_late,
 						configs.my_ip_data,
 						late_payloads[payload_lengths_idx],
 						configs.late_min_periodicity,
@@ -1668,7 +1718,8 @@ int main (int argc, char **argv) {
 					close(listen_tcpsockd);
 
 					// Child work (exec)
-					snprintf(iperfcmdstr,IPERF_CMD_STR_MAX_SIZE,"/usr/bin/iperf -c %s %s -p %d -l %s -i 1 -t %d -b 1G >1 /dev/null >2 /dev/null",
+					snprintf(iperfcmdstr,IPERF_CMD_STR_MAX_SIZE,"%s/iperf -c %s %s -p %d -l %s -i 1 -t %d -b 1G >1 /dev/null >2 /dev/null",
+						configs.exec_path_iperf,
 						configs.my_ip_data,
 						iperf_tcp==true ? "" : "-u -P 3",
 						configs.port_iperf,
@@ -1729,7 +1780,8 @@ int main (int argc, char **argv) {
 					close(listen_tcpsockd);
 
 					// Child work (exec)
-					snprintf(iperfcmdstr,IPERF_CMD_STR_MAX_SIZE,"/usr/bin/iperf -s %s -i 1 -p %d -l %s -y C >1 %s/iperf_throughput_%s_%lu.csv",
+					snprintf(iperfcmdstr,IPERF_CMD_STR_MAX_SIZE,"%s/iperf -s %s -i 1 -p %d -l %s -y C >1 %s/iperf_throughput_%s_%lu.csv",
+						configs.exec_path_iperf,
 						iperf_tcp==true ? "" : "-u",
 						configs.port_iperf,
 						iperf_tcp==true ? configs.TCP_iperf_buf_len : configs.UDP_iperf_packet_len,

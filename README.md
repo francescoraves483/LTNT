@@ -11,7 +11,7 @@ The platform is able to measure the following metrics, in a continuous loop, alt
 - all the other metrics supported by [LaTe](https://github.com/francescoraves483/LaMP_LaTe)
 - throughput (in both directions), over TCP and UDP
 
-**Important:** this project is still in a very early stage. You are really welcome if you want to contribute and provide suggestions! More features and configuration parameters are going to be added in the future.
+**Important:** this project is still in a *very early* stage! You are really welcome if you want to contribute and provide suggestions! More features, configuration parameters and bug fixes are going to be introduced in the future.
 
 # LTNT open source software
 
@@ -49,7 +49,8 @@ Thus, the **full LTNT platform** is composed by:
 
 To resume, in order to perform the network measurements, the user can rely on:
 - The _full LTNT platform_ (software + PC Engines hardware + OpenWrt), which is the suggested and tested option - the **steps** described below refer to the **full LTNT platform**
-- Only the _LTNT software components_ (iPerf, LaTe, a clock synchronization package, LTNT test manager), with other devices respecting the minimum requirements and configuration mentioned above and running a Linux OS - the user, in this case, will have to properly configure these devices, taking as reference the steps described below (however, the same steps may change significantly depending on the hardware configuration and, especially, on the selected OS; for instance, if you decide to use two Ubuntu PCs, you do not need to prepare another OS, like OpenWrt, and flash it somewhere and you do not need to cross-compile anything, as you can directly compile both _LTNT_test_manager_ and _LaTe_)
+- Only the _LTNT software components_ (iPerf, LaTe, a clock synchronization package, LTNT test manager), with other devices respecting the minimum requirements and configuration mentioned above and running a Linux OS - the user, in this case, will have to properly configure these devices, taking as reference the steps described below (however, the same steps may change significantly depending on the hardware configuration and, especially, on the selected OS; for instance, if you decide to use two Ubuntu PCs, you do not need to prepare another OS, like OpenWrt, and flash it somewhere and you do not need to cross-compile anything, as you can directly compile both _LTNT_test_manager_ and _LaTe_).
+When relying on this option, the user should set the `exec_path_late` and `exec_path_iperf` options in LTNT.ini with the correct paths on where the LaTe executable has been compiled and on where iperf has been installed (the user can find this out with the command `which iperf`).
 
 # How does LTNT work?
 
@@ -659,6 +660,8 @@ The tests can be configured with `LTNT.ini`, which is supporting, for the time b
 - `[Log directory names] logs_late_unidir_DL`: name of the directory, inside `test_log_dir`, where the LaTe DL (slave->master) CSV logs will be saved - this folder will be filled in on the **slave** board with the cumulative log (i.e. containing average, mininum, maximum latency, total packet loss, standard deviation, ...) and on the **master** board with the single packet latency/packet error rate till-now CSV logs
 - `[Log directory names] logs_iperf_UL`: name of the directory, inside `test_log_dir`, where the iPerf UL (master->slave) CSV logs will be saved, containing the throughput measurements - this folder will be filled in only on the **slave** board
 - `[Log directory names] logs_iperf_DL`: name of the directory, inside `test_log_dir`, where the iPerf DL (slave->master) CSV logs will be saved, containing the throughput measurements - this folder will be filled in only on the **master** board
+- `[Executable paths] exec_path_late`: path in which the LaTe executable is placed. Defaults to `/root`, i.e. the place where LaTe is normally saved on OpenWrt if you follow the steps reported above for the full LTNT platform. **Warning:** *In the current version, LaTe must be located inside the same directory in both the devices (master and slave) participating in the measurement session and this option affects both of them. This limitation is going to be solved in the near future.*
+- `[Executable paths] exec_path_iperf`: path in which iPerf is normally installed. Defaults to `/usr/bin`, which seems to be the most common location when installing iperf with a package manager (like `apt` or `opkg`). The user can find out where iperf is installed with the command `which iperf`. **Warning:** *In the current version, iPerf must be installed inside the same directory in both the devices (master and slave) participating in the measurement session and this option affects both of them. This limitation is going to be solved in the near future.*
 
 # External libraries used in this project
 
