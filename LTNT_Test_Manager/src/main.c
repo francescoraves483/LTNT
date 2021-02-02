@@ -33,9 +33,10 @@
 
 #define LOGNAME_STR_MAX_SIZE 1024
 #define IPERF_CMD_STR_MAX_SIZE 1024
-#define LATE_CMD_STR_MAX_SIZE 10240
+#define LATE_CMD_STR_MAX_SIZE 2048
 #define TCP_CTRL_MASTER_READY_SIZE 1024
 #define PERIOD_STR_MAX_SIZE 10
+#define IPERF_UDP_THR_STR_SIZE 8
 
 typedef struct {
 	unsigned int late_bidir;
@@ -520,6 +521,9 @@ int main (int argc, char **argv) {
 	// LaTe and iperf path string buffer
 	char execpathstr[PATH_MAX]={0};
 
+	// UDP iperf "-u -P x" string buffer
+	char iperfudpthrstr[IPERF_UDP_THR_STR_SIZE]={0};
+
 	// LaTe payload length array index
 	int payload_lengths_idx;
 
@@ -591,6 +595,22 @@ int main (int argc, char **argv) {
 						   configs.ip_data_remote,configs.ip_control_remote,configs.my_ip_data,configs.my_ip_control);
 			retval=ERR_CONFIG;
 			goto main_error;
+		}
+
+		// Prepare the additional options string when iperf -c is used in UDP mode
+		// This string contains -u and, if necessary, -P <number of iperf threads>, depending on the value specified with the UDP_iperf_num_threads configuration option
+		// First of all, check if a supported value (from 1 to 9) has been specified
+		if(configs.UDP_iperf_num_threads<=0 || configs.UDP_iperf_num_threads>9) {
+			fprintf(stderr,"Error: invalid option [iperf] UDP_iperf_num_threads: %d.\nValid values are from 1 to 9.\n",configs.UDP_iperf_num_threads);
+			retval=ERR_CONFIG;
+			goto main_error;
+		}
+
+		// Then, prepare the string (-P is added only when the number of desired iperf threads is >=2)
+		if(configs.UDP_iperf_num_threads<=1) {
+			snprintf(iperfudpthrstr,IPERF_UDP_THR_STR_SIZE,"-u");
+		} else {
+			snprintf(iperfudpthrstr,IPERF_UDP_THR_STR_SIZE,"-u -P %d",configs.UDP_iperf_num_threads);
 		}
 
 		// Allocate the strings for the log directory names
@@ -1185,13 +1205,14 @@ int main (int argc, char **argv) {
 					close(tcp_sockd);
 
 					// Child work (exec)
-					snprintf(iperfcmdstr,IPERF_CMD_STR_MAX_SIZE,"%s/iperf -c %s %s -p %d -l %s -i 1 -t %d -b 1G >1 /dev/null >2 /dev/null",
+					snprintf(iperfcmdstr,IPERF_CMD_STR_MAX_SIZE,"%s/iperf -c %s %s -p %d -l %s -i 1 -t %d -b %s >1 /dev/null >2 /dev/null",
 						configs.exec_path_iperf,
 						configs.ip_data_remote,
-						iperf_tcp==true ? "" : "-u -P 3",
+						iperf_tcp==true ? "" : iperfudpthrstr,
 						configs.port_iperf,
 						iperf_tcp==true ? configs.TCP_iperf_buf_len : configs.UDP_iperf_packet_len,
-						configs.test_duration_iperf_sec);
+						configs.test_duration_iperf_sec,
+						iperf_tcp==true ? configs.TCP_iperf_offered_traffic : configs.UDP_iperf_offered_traffic);
 					if(exect(iperfcmdstr)<0) {
 						fprintf(stderr,"Error: cannot spawn the iperf client for the UL (master->slave) test (%s). exect() error.\n",iperf_tcp==true ? "tcp" : "udp");
 						iperf_tcp==true ? errors.iperf_TCP_UL++ : errors.iperf_UDP_UL++;
@@ -1461,6 +1482,24 @@ int main (int argc, char **argv) {
 						goto slave_error;
 					}
 
+					// Prepare the additional options string when iperf -c is used in UDP mode
+					// This string contains -u and, if necessary, -P <number of iperf threads>, depending on the value specified with the UDP_iperf_num_threads configuration option
+					// First of all, check if a supported value (from 1 to 9) has been specified (as this data is received from the master, we should never enter here)
+					if(configs.UDP_iperf_num_threads<=0 || configs.UDP_iperf_num_threads>9) {
+						fprintf(stderr,"Error: invalid option [iperf] UDP_iperf_num_threads: %d.\nValid values are from 1 to 9.\n"
+							"This error indicates a bug in the program, as the slave should have never printed this.\n"
+							"Please report this issue to the developers. Thank you.\n",configs.UDP_iperf_num_threads);
+						retval=ERR_CONFIG;
+						goto main_error;
+					}
+
+					// Then, prepare the string (-P is added only when the number of desired iperf threads is >=2)
+					if(configs.UDP_iperf_num_threads<=1) {
+						snprintf(iperfudpthrstr,IPERF_UDP_THR_STR_SIZE,"-u");
+					} else {
+						snprintf(iperfudpthrstr,IPERF_UDP_THR_STR_SIZE,"-u -P %d",configs.UDP_iperf_num_threads);
+					}
+
 					// Allocate the strings for the log directory names
 					if(alloclogdirnames(configs,&logdirnames)!=ERR_OK) {
 						retval=ERR_MALLOC;
@@ -1717,14 +1756,23 @@ int main (int argc, char **argv) {
 					close(tcp_sockd);
 					close(listen_tcpsockd);
 
+					// Checking again for a proper configs.UDP_iperf_num_threads value (i.e. between 1 and 9), just for the sake of additional safety
+					// A non-proper value, or a value of 1, will result in the P option not being used
+					if(configs.UDP_iperf_num_threads<=1 || configs.UDP_iperf_num_threads>9) {
+						snprintf(iperfudpthrstr,IPERF_UDP_THR_STR_SIZE,"-u");
+					} else {
+						snprintf(iperfudpthrstr,IPERF_UDP_THR_STR_SIZE,"-u -P %d",configs.UDP_iperf_num_threads);
+					}
+
 					// Child work (exec)
-					snprintf(iperfcmdstr,IPERF_CMD_STR_MAX_SIZE,"%s/iperf -c %s %s -p %d -l %s -i 1 -t %d -b 1G >1 /dev/null >2 /dev/null",
+					snprintf(iperfcmdstr,IPERF_CMD_STR_MAX_SIZE,"%s/iperf -c %s %s -p %d -l %s -i 1 -t %d -b %s >1 /dev/null >2 /dev/null",
 						configs.exec_path_iperf,
 						configs.my_ip_data,
-						iperf_tcp==true ? "" : "-u -P 3",
+						iperf_tcp==true ? "" : iperfudpthrstr,
 						configs.port_iperf,
 						iperf_tcp==true ? configs.TCP_iperf_buf_len : configs.UDP_iperf_packet_len,
-						configs.test_duration_iperf_sec);
+						configs.test_duration_iperf_sec,
+						iperf_tcp==true ? configs.TCP_iperf_offered_traffic : configs.UDP_iperf_offered_traffic);
 					if(exect(iperfcmdstr)<0) {
 						fprintf(stderr,"Error: cannot spawn the iperf client for the UL (master->slave) test (%s). exect() error.\n",iperf_tcp==true ? "tcp" : "udp");
 						iperf_tcp==true ? errors.iperf_TCP_DL++ : errors.iperf_UDP_DL++;

@@ -59,6 +59,9 @@
 	CFG("Duration", test_duration_late_sec, int, 1800) \
 	CFG("iperf", UDP_iperf_packet_len, char *, "1470") \
 	CFG("iperf", TCP_iperf_buf_len, char *, "128K") \
+	CFG("iperf", UDP_iperf_offered_traffic, char *, "1G") \
+	CFG("iperf", UDP_iperf_num_threads, int, 3) \
+	CFG("iperf", TCP_iperf_offered_traffic, char *, "1G") \
 	CFG("Paths", scripts_dir, char *, "./scripts") \
 	CFG("Paths", test_log_dir, char *, "./") \
 	CFG("LaTe", late_payload_sizes, char *, "0,1448") \
