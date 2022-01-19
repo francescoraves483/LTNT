@@ -925,11 +925,10 @@ int main (int argc, char **argv) {
 						// Checking for "my_bind_ip_address" as this is the master code
 						if(strcmp(configs.my_bind_ip_address,"0.0.0.0")!=0) {
 							// Child work (exec)
-							snprintf(latecmdstr,LATE_CMD_STR_MAX_SIZE,"%s/LaTe -s -u -p %d -t 10000 -S %s -W %s/LaTe_unidir_DL_P_%d_%lu_perpkt "
+							snprintf(latecmdstr,LATE_CMD_STR_MAX_SIZE,"%s/LaTe -s -u -p %d -t 10000 -W %s/LaTe_unidir_DL_P_%d_%lu_perpkt "
 								"-X mnrp --initial-timeout --bind-to-ip %s >1 /dev/null >a2 late_errors_unidir_DL.log",
 								configs.exec_path_late,
 								configs.port_late_unidir_DL,
-								configs.test_interface,
 								logdirnames.logs_unidir_DL_dir_str,late_payloads[payload_lengths_idx],now.tv_sec,configs.my_bind_ip_address);
 						} else {
 							// Child work (exec)
@@ -973,7 +972,7 @@ int main (int argc, char **argv) {
 
 					if(strcmp(configs.my_bind_ip_address,"0.0.0.0")!=0) {
 						// Child work (exec)
-						snprintf(latecmdstr,LATE_CMD_STR_MAX_SIZE,"%s/LaTe -c %s -u -B -P %d -t %d -R e%d,%d -i %d -p %d -T 10000 -S %s "
+						snprintf(latecmdstr,LATE_CMD_STR_MAX_SIZE,"%s/LaTe -c %s -u -B -P %d -t %d -R e%d,%d -i %d -p %d -T 10000 "
 							"-W %s/LaTe_bidir_P_%d_%lu_perpkt -X mnrp -f %s/LaTe_bidir_%lu_final --bind-to-ip %s >1 /dev/null >a2 late_errors_bidir.log",
 							configs.exec_path_late,
 							configs.ip_data_remote,
@@ -982,10 +981,10 @@ int main (int argc, char **argv) {
 							configs.late_mean_periodicity,configs.late_periodicity_batch,
 							configs.test_duration_late_sec,
 							configs.port_late_bidir,
-							configs.test_interface,
 							logdirnames.logs_bidir_dir_str,late_payloads[payload_lengths_idx],now.tv_sec,
 							logdirnames.logs_bidir_dir_str,now_begin.tv_sec,
 							configs.my_bind_ip_address);
+						// printf("[DEBUG] latecmdstr=%s\n",latecmdstr);
 					} else {
 						// Child work (exec)
 						snprintf(latecmdstr,LATE_CMD_STR_MAX_SIZE,"%s/LaTe -c %s -u -B -P %d -t %d -R e%d,%d -i %d -p %d -T 10000 -S %s "
@@ -1023,7 +1022,7 @@ int main (int argc, char **argv) {
 
 						if(strcmp(configs.my_bind_ip_address,"0.0.0.0")!=0) {
 							// Child work (exec)
-							snprintf(latecmdstr,LATE_CMD_STR_MAX_SIZE,"%s/LaTe -c %s -u -U -P %d -t %d -R e%d,%d -i %d -p %d -T 10000 -S %s "
+							snprintf(latecmdstr,LATE_CMD_STR_MAX_SIZE,"%s/LaTe -c %s -u -U -P %d -t %d -R e%d,%d -i %d -p %d -T 10000 "
 								"-f %s/LaTe_unidir_UL_%lu_final --bind-to-ip %s >1 /dev/null >a2 late_errors_unidir_UL.log",
 								configs.exec_path_late,
 								configs.ip_data_remote,
@@ -1032,7 +1031,6 @@ int main (int argc, char **argv) {
 								configs.late_mean_periodicity,configs.late_periodicity_batch,
 								configs.test_duration_late_sec,
 								configs.port_late_unidir_UL,
-								configs.test_interface,
 								logdirnames.logs_unidir_UL_dir_str,now_begin.tv_sec,
 								configs.my_bind_ip_address);
 						} else {
@@ -1677,13 +1675,13 @@ int main (int argc, char **argv) {
 					// Checking for bind_ip_address_remote as this is the slave code
 					if(strcmp(configs.bind_ip_address_remote,"0.0.0.0")!=0) {
 						// Child work (exec)
-						snprintf(latecmdstr,LATE_CMD_STR_MAX_SIZE,"%s/LaTe -s -u -p %d -t 10000 -S %s -W %s/LaTe_bidir_P_%d_%lu_perpkt "
+						snprintf(latecmdstr,LATE_CMD_STR_MAX_SIZE,"%s/LaTe -s -u -p %d -t 10000 -W %s/LaTe_bidir_P_%d_%lu_perpkt "
 							"-X mnrp --initial-timeout --bind-to-ip %s >1 /dev/null >a2 late_errors_bidir.log",
 							configs.exec_path_late,
 							configs.port_late_bidir,
-							configs.test_interface,
 							logdirnames.logs_bidir_dir_str,late_payloads[payload_lengths_idx],now.tv_sec,
 							configs.bind_ip_address_remote);
+						// printf("[DEBUG] latecmdstr=%s\n",latecmdstr);
 					} else {
 						// Child work (exec)
 						snprintf(latecmdstr,LATE_CMD_STR_MAX_SIZE,"%s/LaTe -s -u -p %d -t 10000 -S %s -W %s/LaTe_bidir_P_%d_%lu_perpkt "
@@ -1714,11 +1712,10 @@ int main (int argc, char **argv) {
 
 						if(strcmp(configs.bind_ip_address_remote,"0.0.0.0")!=0) {
 							// Child work (exec)
-							snprintf(latecmdstr,LATE_CMD_STR_MAX_SIZE,"%s/LaTe -s -u -p %d -t 10000 -S %s -W %s/LaTe_unidir_UL_P_%d_%lu_perpkt "
+							snprintf(latecmdstr,LATE_CMD_STR_MAX_SIZE,"%s/LaTe -s -u -p %d -t 10000 -W %s/LaTe_unidir_UL_P_%d_%lu_perpkt "
 								"-X mnrp --initial-timeout --bind-to-ip %s >1 /dev/null >a2 late_errors_unidir_UL.log",
 								configs.exec_path_late,
 								configs.port_late_unidir_UL,
-								configs.test_interface,
 								logdirnames.logs_unidir_UL_dir_str,late_payloads[payload_lengths_idx],now.tv_sec,
 								configs.bind_ip_address_remote);
 						} else {
@@ -1764,7 +1761,7 @@ int main (int argc, char **argv) {
 
 						if(strcmp(configs.bind_ip_address_remote,"0.0.0.0")!=0) {
 							// Child work (exec)
-							snprintf(latecmdstr,LATE_CMD_STR_MAX_SIZE,"%s/LaTe -c %s -u -U -P %d -t %d -R e%d,%d -i %d -p %d -T 10000 -S %s "
+							snprintf(latecmdstr,LATE_CMD_STR_MAX_SIZE,"%s/LaTe -c %s -u -U -P %d -t %d -R e%d,%d -i %d -p %d -T 10000 "
 								"-f %s/LaTe_unidir_DL_%lu_final --bind-to-ip %s >1 /dev/null >a2 late_errors_unidir_DL.log",
 								configs.exec_path_late,
 								configs.my_ip_data,
@@ -1773,7 +1770,6 @@ int main (int argc, char **argv) {
 								configs.late_mean_periodicity,configs.late_periodicity_batch,
 								configs.test_duration_late_sec,
 								configs.port_late_unidir_DL,
-								configs.test_interface,
 								logdirnames.logs_unidir_DL_dir_str,now_begin.tv_sec,
 								configs.bind_ip_address_remote);
 						} else {
