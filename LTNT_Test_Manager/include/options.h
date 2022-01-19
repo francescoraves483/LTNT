@@ -77,7 +77,8 @@
 	CFG("Log directory names", logs_iperf_DL, char *, "Logs_iperf_DL") \
 	CFG("Log directory names", logs_ping, char *, "Logs_ping") \
 	CFG("Executable paths", exec_path_late, char *, "/root") \
-	CFG("Executable paths", exec_path_iperf, char *, "/usr/bin")
+	CFG("Executable paths", exec_path_iperf, char *, "/usr/bin") \
+	CFG("Extra options", late_disable_unidir, int, 0)
 
 typedef enum {
 	LTNT_OPMODE_UNSET,

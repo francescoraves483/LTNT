@@ -708,6 +708,7 @@ int main (int argc, char **argv) {
 			fprintf(stdout,"Master control IP: %s\n",configs.my_ip_control);
 			fprintf(stdout,"Slave control IP: %s\n",configs.ip_control_remote);
 			fprintf(stdout,"Logs directory: %s\n",configs.test_log_dir);
+			fprintf(stdout,"LaTe unidirectional tests enabled? %s\n",configs.late_disable_unidir>0 ? "no" : "yes");
 			fprintf(stdout,"--------------------------\n");
 			fprintf(stdout,"Current time: %d-%02d-%02d,%02d:%02d:%02d (%lu.%lu)\n",
 				currdate->tm_year+1900,currdate->tm_mon+1,currdate->tm_mday,currdate->tm_hour,currdate->tm_min,currdate->tm_sec,
@@ -909,28 +910,30 @@ int main (int argc, char **argv) {
 			while(true) {
 				pid_t late_pids[3]={0};
 
-				gettimeofday(&now,NULL);
-				fprintf(stdout,"Starting LaTe unidirectional (DL: slave->master) server @ %lu...\n",now.tv_sec);
+				if(configs.late_disable_unidir==0) {
+					gettimeofday(&now,NULL);
+					fprintf(stdout,"Starting LaTe unidirectional (DL: slave->master) server @ %lu...\n",now.tv_sec);
 
-				// Spawn the DL (slave->master) latency server
-				if((late_pids[UNIDIR_DL_IDX]=fork())<0) {
-					fprintf(stderr,"Error: cannot spawn LaTe unidirectional (DL) process (server).\n");
-					errors.late_unidir_DL++;
-				} else if(late_pids[UNIDIR_DL_IDX]==0) {
-					close(udp_sockd);
-					close(tcp_sockd);
-
-					// Child work (exec)
-					snprintf(latecmdstr,LATE_CMD_STR_MAX_SIZE,"%s/LaTe -s -u -p %d -t 10000 -S %s -W %s/LaTe_unidir_DL_P_%d_%lu_perpkt "
-						"-X mnrp --initial-timeout >1 /dev/null >a2 late_errors_unidir_DL.log",
-						configs.exec_path_late,
-						configs.port_late_unidir_DL,
-						configs.test_interface,
-						logdirnames.logs_unidir_DL_dir_str,late_payloads[payload_lengths_idx],now.tv_sec);
-
-					if(exect(latecmdstr)<0) {
-						fprintf(stderr,"Error: cannot spawn LaTe unidirectional (DL) process (server). exect() error.\n");
+					// Spawn the DL (slave->master) latency server
+					if((late_pids[UNIDIR_DL_IDX]=fork())<0) {
+						fprintf(stderr,"Error: cannot spawn LaTe unidirectional (DL) process (server).\n");
 						errors.late_unidir_DL++;
+					} else if(late_pids[UNIDIR_DL_IDX]==0) {
+						close(udp_sockd);
+						close(tcp_sockd);
+
+						// Child work (exec)
+						snprintf(latecmdstr,LATE_CMD_STR_MAX_SIZE,"%s/LaTe -s -u -p %d -t 10000 -S %s -W %s/LaTe_unidir_DL_P_%d_%lu_perpkt "
+							"-X mnrp --initial-timeout >1 /dev/null >a2 late_errors_unidir_DL.log",
+							configs.exec_path_late,
+							configs.port_late_unidir_DL,
+							configs.test_interface,
+							logdirnames.logs_unidir_DL_dir_str,late_payloads[payload_lengths_idx],now.tv_sec);
+
+						if(exect(latecmdstr)<0) {
+							fprintf(stderr,"Error: cannot spawn LaTe unidirectional (DL) process (server). exect() error.\n");
+							errors.late_unidir_DL++;
+						}
 					}
 				}
 
@@ -976,42 +979,49 @@ int main (int argc, char **argv) {
 					}
 				}
 
-				millisleep(configs.late_sleep_between_clients_ms);
+				if(configs.late_disable_unidir==0) {
+					millisleep(configs.late_sleep_between_clients_ms);
 
-				gettimeofday(&now,NULL);
-				fprintf(stdout,"Starting LaTe unidirectional (UL: master->slave) client @ %lu...\n",now.tv_sec);
+					gettimeofday(&now,NULL);
+					fprintf(stdout,"Starting LaTe unidirectional (UL: master->slave) client @ %lu...\n",now.tv_sec);
 
-				if((late_pids[UNIDIR_UL_IDX]=fork())<0) {
-					fprintf(stderr,"Error: cannot spawn LaTe unidirectional (UL) process (client).\n");
-					errors.late_unidir_UL++;
-				} else if(late_pids[UNIDIR_UL_IDX]==0) {
-					close(udp_sockd);
-					close(tcp_sockd);
-
-					// Child work (exec)
-					snprintf(latecmdstr,LATE_CMD_STR_MAX_SIZE,"%s/LaTe -c %s -u -U -P %d -t %d -R e%d,%d -i %d -p %d -T 10000 -S %s "
-						"-f %s/LaTe_unidir_UL_%lu_final >1 /dev/null >a2 late_errors_unidir_UL.log",
-						configs.exec_path_late,
-						configs.ip_data_remote,
-						late_payloads[payload_lengths_idx],
-						configs.late_min_periodicity,
-						configs.late_mean_periodicity,configs.late_periodicity_batch,
-						configs.test_duration_late_sec,
-						configs.port_late_unidir_UL,
-						configs.test_interface,
-						logdirnames.logs_unidir_UL_dir_str,now_begin.tv_sec);
-					if(exect(latecmdstr)<0) {
-						fprintf(stderr,"Error: cannot spawn LaTe unidirectional (DL) process (server). exect() error.\n");
+					if((late_pids[UNIDIR_UL_IDX]=fork())<0) {
+						fprintf(stderr,"Error: cannot spawn LaTe unidirectional (UL) process (client).\n");
 						errors.late_unidir_UL++;
+					} else if(late_pids[UNIDIR_UL_IDX]==0) {
+						close(udp_sockd);
+						close(tcp_sockd);
+
+						// Child work (exec)
+						snprintf(latecmdstr,LATE_CMD_STR_MAX_SIZE,"%s/LaTe -c %s -u -U -P %d -t %d -R e%d,%d -i %d -p %d -T 10000 -S %s "
+							"-f %s/LaTe_unidir_UL_%lu_final >1 /dev/null >a2 late_errors_unidir_UL.log",
+							configs.exec_path_late,
+							configs.ip_data_remote,
+							late_payloads[payload_lengths_idx],
+							configs.late_min_periodicity,
+							configs.late_mean_periodicity,configs.late_periodicity_batch,
+							configs.test_duration_late_sec,
+							configs.port_late_unidir_UL,
+							configs.test_interface,
+							logdirnames.logs_unidir_UL_dir_str,now_begin.tv_sec);
+						if(exect(latecmdstr)<0) {
+							fprintf(stderr,"Error: cannot spawn LaTe unidirectional (DL) process (server). exect() error.\n");
+							errors.late_unidir_UL++;
+						}
 					}
 				}
 
-				fprintf(stdout,"LaTe process PID [bidirectional]: %d (LaMP payload size: %d)\n"
-					"LaTe process PID [unidirectional UL]: %d (LaMP payload size: %d)\n"
-					"LaTe process PID [unidirectional DL]: %d (LaMP payload size: %d)\n",
-					late_pids[BIDIR_IDX],late_payloads[payload_lengths_idx],
-					late_pids[UNIDIR_UL_IDX],late_payloads[payload_lengths_idx],
-					late_pids[UNIDIR_DL_IDX],late_payloads[payload_lengths_idx]);
+				if(configs.late_disable_unidir==0) {
+					fprintf(stdout,"LaTe process PID [bidirectional]: %d (LaMP payload size: %d)\n"
+						"LaTe process PID [unidirectional UL]: %d (LaMP payload size: %d)\n"
+						"LaTe process PID [unidirectional DL]: %d (LaMP payload size: %d)\n",
+						late_pids[BIDIR_IDX],late_payloads[payload_lengths_idx],
+						late_pids[UNIDIR_UL_IDX],late_payloads[payload_lengths_idx],
+						late_pids[UNIDIR_DL_IDX],late_payloads[payload_lengths_idx]);
+				} else {
+					fprintf(stdout,"LaTe process PID [bidirectional]: %d (LaMP payload size: %d)\n",
+						late_pids[BIDIR_IDX],late_payloads[payload_lengths_idx]);
+				}
 
 				// Start also ping, if required through the -p option
 				pid_t ping_pid=0;
@@ -1060,6 +1070,8 @@ int main (int argc, char **argv) {
 						}
 
 						if(terminated_instances==3) {
+							break;
+						} else if(configs.late_disable_unidir>0 && terminated_instances==1) {
 							break;
 						}
 					}
@@ -1535,6 +1547,7 @@ int main (int argc, char **argv) {
 			fprintf(stdout,"Master control IP: %s\n",configs.my_ip_control);
 			fprintf(stdout,"Slave control IP: %s\n",configs.ip_control_remote);
 			fprintf(stdout,"LaTe payloads min-max: %d->%d\n",late_payloads[0],late_payloads[late_payloads_size-1]);
+			fprintf(stdout,"LaTe unidirectional tests enabled? %s\n",configs.late_disable_unidir>0 ? "no" : "yes");
 			fprintf(stdout,"--------------------------\n");
 
 			gettimeofday(&now_begin,NULL);
@@ -1602,27 +1615,29 @@ int main (int argc, char **argv) {
 					}
 				}
 
-				gettimeofday(&now,NULL);
-				fprintf(stdout,"Starting LaTe unidirectional (UL: master->slave) server @ %lu...\n",now.tv_sec);
+				if(configs.late_disable_unidir==0) {
+					gettimeofday(&now,NULL);
+					fprintf(stdout,"Starting LaTe unidirectional (UL: master->slave) server @ %lu...\n",now.tv_sec);
 
-				if((late_pids[UNIDIR_UL_IDX]=fork())<0) {
-					fprintf(stderr,"Error: cannot spawn LaTe bidirectional process (server).\n");
-					errors.late_unidir_UL++;
-				} else if(late_pids[UNIDIR_UL_IDX]==0) {
-					close(udp_sockd);
-					close(tcp_sockd);
-					close(listen_tcpsockd);
-
-					// Child work (exec)
-					snprintf(latecmdstr,LATE_CMD_STR_MAX_SIZE,"%s/LaTe -s -u -p %d -t 10000 -S %s -W %s/LaTe_unidir_UL_P_%d_%lu_perpkt "
-						"-X mnrp --initial-timeout >1 /dev/null >a2 late_errors_unidir_UL.log",
-						configs.exec_path_late,
-						configs.port_late_unidir_UL,
-						configs.test_interface,
-						logdirnames.logs_unidir_UL_dir_str,late_payloads[payload_lengths_idx],now.tv_sec);
-					if(exect(latecmdstr)<0) {
-						fprintf(stderr,"Error: cannot spawn LaTe bidirectional (RTT) process (server). exect() error.\n");
+					if((late_pids[UNIDIR_UL_IDX]=fork())<0) {
+						fprintf(stderr,"Error: cannot spawn LaTe bidirectional process (server).\n");
 						errors.late_unidir_UL++;
+					} else if(late_pids[UNIDIR_UL_IDX]==0) {
+						close(udp_sockd);
+						close(tcp_sockd);
+						close(listen_tcpsockd);
+
+						// Child work (exec)
+						snprintf(latecmdstr,LATE_CMD_STR_MAX_SIZE,"%s/LaTe -s -u -p %d -t 10000 -S %s -W %s/LaTe_unidir_UL_P_%d_%lu_perpkt "
+							"-X mnrp --initial-timeout >1 /dev/null >a2 late_errors_unidir_UL.log",
+							configs.exec_path_late,
+							configs.port_late_unidir_UL,
+							configs.test_interface,
+							logdirnames.logs_unidir_UL_dir_str,late_payloads[payload_lengths_idx],now.tv_sec);
+						if(exect(latecmdstr)<0) {
+							fprintf(stderr,"Error: cannot spawn LaTe bidirectional (RTT) process (server). exect() error.\n");
+							errors.late_unidir_UL++;
+						}
 					}
 				}
 
@@ -1637,42 +1652,49 @@ int main (int argc, char **argv) {
 					goto slave_error;
 				}
 
-				// Start the DL (slave->master) client
-				gettimeofday(&now,NULL);
-				fprintf(stdout,"Starting LaTe unidirectional (DL: slave->master) client @ %lu...\n",now.tv_sec);
+				if(configs.late_disable_unidir==0) {
+					// Start the DL (slave->master) client
+					gettimeofday(&now,NULL);
+					fprintf(stdout,"Starting LaTe unidirectional (DL: slave->master) client @ %lu...\n",now.tv_sec);
 
-				if((late_pids[UNIDIR_DL_IDX]=fork())<0) {
-					fprintf(stderr,"Error: cannot spawn LaTe unidirectional (DL) process (client).\n");
-					errors.late_unidir_DL++;
-				} else if(late_pids[UNIDIR_DL_IDX]==0) {
-					close(udp_sockd);
-					close(tcp_sockd);
-					close(listen_tcpsockd);
-
-					// Child work (exec)
-					snprintf(latecmdstr,LATE_CMD_STR_MAX_SIZE,"%s/LaTe -c %s -u -U -P %d -t %d -R e%d,%d -i %d -p %d -T 10000 -S %s "
-						"-f %s/LaTe_unidir_DL_%lu_final >1 /dev/null >a2 late_errors_unidir_DL.log",
-						configs.exec_path_late,
-						configs.my_ip_data,
-						late_payloads[payload_lengths_idx],
-						configs.late_min_periodicity,
-						configs.late_mean_periodicity,configs.late_periodicity_batch,
-						configs.test_duration_late_sec,
-						configs.port_late_unidir_DL,
-						configs.test_interface,
-						logdirnames.logs_unidir_DL_dir_str,now_begin.tv_sec);
-					if(exect(latecmdstr)<0) {
-						fprintf(stderr,"Error: cannot spawn LaTe unidirectional (DL) process (client). exect() error.\n");
+					if((late_pids[UNIDIR_DL_IDX]=fork())<0) {
+						fprintf(stderr,"Error: cannot spawn LaTe unidirectional (DL) process (client).\n");
 						errors.late_unidir_DL++;
+					} else if(late_pids[UNIDIR_DL_IDX]==0) {
+						close(udp_sockd);
+						close(tcp_sockd);
+						close(listen_tcpsockd);
+
+						// Child work (exec)
+						snprintf(latecmdstr,LATE_CMD_STR_MAX_SIZE,"%s/LaTe -c %s -u -U -P %d -t %d -R e%d,%d -i %d -p %d -T 10000 -S %s "
+							"-f %s/LaTe_unidir_DL_%lu_final >1 /dev/null >a2 late_errors_unidir_DL.log",
+							configs.exec_path_late,
+							configs.my_ip_data,
+							late_payloads[payload_lengths_idx],
+							configs.late_min_periodicity,
+							configs.late_mean_periodicity,configs.late_periodicity_batch,
+							configs.test_duration_late_sec,
+							configs.port_late_unidir_DL,
+							configs.test_interface,
+							logdirnames.logs_unidir_DL_dir_str,now_begin.tv_sec);
+						if(exect(latecmdstr)<0) {
+							fprintf(stderr,"Error: cannot spawn LaTe unidirectional (DL) process (client). exect() error.\n");
+							errors.late_unidir_DL++;
+						}
 					}
 				}
 
-				fprintf(stdout,"LaTe process PID [bidirectional]: %d (LaMP payload size: %d)\n"
-					"LaTe process PID [unidirectional UL]: %d (LaMP payload size: %d)\n"
-					"LaTe process PID [unidirectional DL]: %d (LaMP payload size: %d)\n",
-					late_pids[BIDIR_IDX],late_payloads[payload_lengths_idx],
-					late_pids[UNIDIR_UL_IDX],late_payloads[payload_lengths_idx],
-					late_pids[UNIDIR_DL_IDX],late_payloads[payload_lengths_idx]);
+				if(configs.late_disable_unidir==0) {
+					fprintf(stdout,"LaTe process PID [bidirectional]: %d (LaMP payload size: %d)\n"
+						"LaTe process PID [unidirectional UL]: %d (LaMP payload size: %d)\n"
+						"LaTe process PID [unidirectional DL]: %d (LaMP payload size: %d)\n",
+						late_pids[BIDIR_IDX],late_payloads[payload_lengths_idx],
+						late_pids[UNIDIR_UL_IDX],late_payloads[payload_lengths_idx],
+						late_pids[UNIDIR_DL_IDX],late_payloads[payload_lengths_idx]);
+				} else {
+					fprintf(stdout,"LaTe process PID [bidirectional]: %d (LaMP payload size: %d)\n",
+						late_pids[BIDIR_IDX],late_payloads[payload_lengths_idx]);
+				}
 
 				pid_t wpid;
 				int pstatus;
