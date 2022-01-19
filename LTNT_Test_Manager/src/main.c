@@ -922,13 +922,24 @@ int main (int argc, char **argv) {
 						close(udp_sockd);
 						close(tcp_sockd);
 
-						// Child work (exec)
-						snprintf(latecmdstr,LATE_CMD_STR_MAX_SIZE,"%s/LaTe -s -u -p %d -t 10000 -S %s -W %s/LaTe_unidir_DL_P_%d_%lu_perpkt "
-							"-X mnrp --initial-timeout >1 /dev/null >a2 late_errors_unidir_DL.log",
-							configs.exec_path_late,
-							configs.port_late_unidir_DL,
-							configs.test_interface,
-							logdirnames.logs_unidir_DL_dir_str,late_payloads[payload_lengths_idx],now.tv_sec);
+						// Checking for "my_bind_ip_address" as this is the master code
+						if(strcmp(configs.my_bind_ip_address,"0.0.0.0")!=0) {
+							// Child work (exec)
+							snprintf(latecmdstr,LATE_CMD_STR_MAX_SIZE,"%s/LaTe -s -u -p %d -t 10000 -S %s -W %s/LaTe_unidir_DL_P_%d_%lu_perpkt "
+								"-X mnrp --initial-timeout --bind-to-ip %s >1 /dev/null >a2 late_errors_unidir_DL.log",
+								configs.exec_path_late,
+								configs.port_late_unidir_DL,
+								configs.test_interface,
+								logdirnames.logs_unidir_DL_dir_str,late_payloads[payload_lengths_idx],now.tv_sec,configs.my_bind_ip_address);
+						} else {
+							// Child work (exec)
+							snprintf(latecmdstr,LATE_CMD_STR_MAX_SIZE,"%s/LaTe -s -u -p %d -t 10000 -S %s -W %s/LaTe_unidir_DL_P_%d_%lu_perpkt "
+								"-X mnrp --initial-timeout >1 /dev/null >a2 late_errors_unidir_DL.log",
+								configs.exec_path_late,
+								configs.port_late_unidir_DL,
+								configs.test_interface,
+								logdirnames.logs_unidir_DL_dir_str,late_payloads[payload_lengths_idx],now.tv_sec);
+						}
 
 						if(exect(latecmdstr)<0) {
 							fprintf(stderr,"Error: cannot spawn LaTe unidirectional (DL) process (server). exect() error.\n");
@@ -960,19 +971,37 @@ int main (int argc, char **argv) {
 					close(udp_sockd);
 					close(tcp_sockd);
 
-					// Child work (exec)
-					snprintf(latecmdstr,LATE_CMD_STR_MAX_SIZE,"%s/LaTe -c %s -u -B -P %d -t %d -R e%d,%d -i %d -p %d -T 10000 -S %s "
-						"-W %s/LaTe_bidir_P_%d_%lu_perpkt -X mnrp -f %s/LaTe_bidir_%lu_final >1 /dev/null >a2 late_errors_bidir.log",
-						configs.exec_path_late,
-						configs.ip_data_remote,
-						late_payloads[payload_lengths_idx],
-						configs.late_min_periodicity,
-						configs.late_mean_periodicity,configs.late_periodicity_batch,
-						configs.test_duration_late_sec,
-						configs.port_late_bidir,
-						configs.test_interface,
-						logdirnames.logs_bidir_dir_str,late_payloads[payload_lengths_idx],now.tv_sec,
-						logdirnames.logs_bidir_dir_str,now_begin.tv_sec);
+					if(strcmp(configs.my_bind_ip_address,"0.0.0.0")!=0) {
+						// Child work (exec)
+						snprintf(latecmdstr,LATE_CMD_STR_MAX_SIZE,"%s/LaTe -c %s -u -B -P %d -t %d -R e%d,%d -i %d -p %d -T 10000 -S %s "
+							"-W %s/LaTe_bidir_P_%d_%lu_perpkt -X mnrp -f %s/LaTe_bidir_%lu_final --bind-to-ip %s >1 /dev/null >a2 late_errors_bidir.log",
+							configs.exec_path_late,
+							configs.ip_data_remote,
+							late_payloads[payload_lengths_idx],
+							configs.late_min_periodicity,
+							configs.late_mean_periodicity,configs.late_periodicity_batch,
+							configs.test_duration_late_sec,
+							configs.port_late_bidir,
+							configs.test_interface,
+							logdirnames.logs_bidir_dir_str,late_payloads[payload_lengths_idx],now.tv_sec,
+							logdirnames.logs_bidir_dir_str,now_begin.tv_sec,
+							configs.my_bind_ip_address);
+					} else {
+						// Child work (exec)
+						snprintf(latecmdstr,LATE_CMD_STR_MAX_SIZE,"%s/LaTe -c %s -u -B -P %d -t %d -R e%d,%d -i %d -p %d -T 10000 -S %s "
+							"-W %s/LaTe_bidir_P_%d_%lu_perpkt -X mnrp -f %s/LaTe_bidir_%lu_final >1 /dev/null >a2 late_errors_bidir.log",
+							configs.exec_path_late,
+							configs.ip_data_remote,
+							late_payloads[payload_lengths_idx],
+							configs.late_min_periodicity,
+							configs.late_mean_periodicity,configs.late_periodicity_batch,
+							configs.test_duration_late_sec,
+							configs.port_late_bidir,
+							configs.test_interface,
+							logdirnames.logs_bidir_dir_str,late_payloads[payload_lengths_idx],now.tv_sec,
+							logdirnames.logs_bidir_dir_str,now_begin.tv_sec);
+					}
+
 					if(exect(latecmdstr)<0) {
 						fprintf(stderr,"Error: cannot spawn LaTe unidirectional (DL) process (server). exect() error.\n");
 						errors.late_bidir++;
@@ -992,18 +1021,35 @@ int main (int argc, char **argv) {
 						close(udp_sockd);
 						close(tcp_sockd);
 
-						// Child work (exec)
-						snprintf(latecmdstr,LATE_CMD_STR_MAX_SIZE,"%s/LaTe -c %s -u -U -P %d -t %d -R e%d,%d -i %d -p %d -T 10000 -S %s "
-							"-f %s/LaTe_unidir_UL_%lu_final >1 /dev/null >a2 late_errors_unidir_UL.log",
-							configs.exec_path_late,
-							configs.ip_data_remote,
-							late_payloads[payload_lengths_idx],
-							configs.late_min_periodicity,
-							configs.late_mean_periodicity,configs.late_periodicity_batch,
-							configs.test_duration_late_sec,
-							configs.port_late_unidir_UL,
-							configs.test_interface,
-							logdirnames.logs_unidir_UL_dir_str,now_begin.tv_sec);
+						if(strcmp(configs.my_bind_ip_address,"0.0.0.0")!=0) {
+							// Child work (exec)
+							snprintf(latecmdstr,LATE_CMD_STR_MAX_SIZE,"%s/LaTe -c %s -u -U -P %d -t %d -R e%d,%d -i %d -p %d -T 10000 -S %s "
+								"-f %s/LaTe_unidir_UL_%lu_final --bind-to-ip %s >1 /dev/null >a2 late_errors_unidir_UL.log",
+								configs.exec_path_late,
+								configs.ip_data_remote,
+								late_payloads[payload_lengths_idx],
+								configs.late_min_periodicity,
+								configs.late_mean_periodicity,configs.late_periodicity_batch,
+								configs.test_duration_late_sec,
+								configs.port_late_unidir_UL,
+								configs.test_interface,
+								logdirnames.logs_unidir_UL_dir_str,now_begin.tv_sec,
+								configs.my_bind_ip_address);
+						} else {
+							// Child work (exec)
+							snprintf(latecmdstr,LATE_CMD_STR_MAX_SIZE,"%s/LaTe -c %s -u -U -P %d -t %d -R e%d,%d -i %d -p %d -T 10000 -S %s "
+								"-f %s/LaTe_unidir_UL_%lu_final >1 /dev/null >a2 late_errors_unidir_UL.log",
+								configs.exec_path_late,
+								configs.ip_data_remote,
+								late_payloads[payload_lengths_idx],
+								configs.late_min_periodicity,
+								configs.late_mean_periodicity,configs.late_periodicity_batch,
+								configs.test_duration_late_sec,
+								configs.port_late_unidir_UL,
+								configs.test_interface,
+								logdirnames.logs_unidir_UL_dir_str,now_begin.tv_sec);
+						}
+
 						if(exect(latecmdstr)<0) {
 							fprintf(stderr,"Error: cannot spawn LaTe unidirectional (DL) process (server). exect() error.\n");
 							errors.late_unidir_UL++;
@@ -1133,13 +1179,24 @@ int main (int argc, char **argv) {
 					close(udp_sockd);
 					close(tcp_sockd);
 
-					// Child work (exec)
-					snprintf(iperfcmdstr,IPERF_CMD_STR_MAX_SIZE,"%s/iperf -s %s -i 1 -p %d -l %s -y C >1 %s/iperf_throughput_%s_%lu.csv",
-						configs.exec_path_iperf,
-						iperf_tcp==true ? "" : "-u",
-						configs.port_iperf,
-						iperf_tcp==true ? configs.TCP_iperf_buf_len : configs.UDP_iperf_packet_len,
-						logdirnames.logs_iperf_DL_dir_str,iperf_tcp==true ? "tcp" : "udp",now.tv_sec);
+					if(strcmp(configs.my_bind_ip_address,"0.0.0.0")!=0) {
+						// Child work (exec)
+						snprintf(iperfcmdstr,IPERF_CMD_STR_MAX_SIZE,"%s/iperf -s %s -i 1 -p %d -l %s -y C -B %s >1 %s/iperf_throughput_%s_%lu.csv",
+							configs.exec_path_iperf,
+							iperf_tcp==true ? "" : "-u",
+							configs.port_iperf,
+							iperf_tcp==true ? configs.TCP_iperf_buf_len : configs.UDP_iperf_packet_len,
+							configs.my_bind_ip_address,
+							logdirnames.logs_iperf_DL_dir_str,iperf_tcp==true ? "tcp" : "udp",now.tv_sec);
+					} else {
+						// Child work (exec)
+						snprintf(iperfcmdstr,IPERF_CMD_STR_MAX_SIZE,"%s/iperf -s %s -i 1 -p %d -l %s -y C >1 %s/iperf_throughput_%s_%lu.csv",
+							configs.exec_path_iperf,
+							iperf_tcp==true ? "" : "-u",
+							configs.port_iperf,
+							iperf_tcp==true ? configs.TCP_iperf_buf_len : configs.UDP_iperf_packet_len,
+							logdirnames.logs_iperf_DL_dir_str,iperf_tcp==true ? "tcp" : "udp",now.tv_sec);
+					}
 					if(exect(iperfcmdstr)<0) {
 						fprintf(stderr,"Error: cannot spawn the iperf server for the DL (slave->master) test (%s). exect() error.\n",iperf_tcp==true ? "tcp" : "udp");
 						iperf_tcp==true ? errors.iperf_TCP_DL++ : errors.iperf_UDP_DL++;
@@ -1216,15 +1273,29 @@ int main (int argc, char **argv) {
 					close(udp_sockd);
 					close(tcp_sockd);
 
-					// Child work (exec)
-					snprintf(iperfcmdstr,IPERF_CMD_STR_MAX_SIZE,"%s/iperf -c %s %s -p %d -l %s -i 1 -t %d -b %s >1 /dev/null >2 /dev/null",
-						configs.exec_path_iperf,
-						configs.ip_data_remote,
-						iperf_tcp==true ? "" : iperfudpthrstr,
-						configs.port_iperf,
-						iperf_tcp==true ? configs.TCP_iperf_buf_len : configs.UDP_iperf_packet_len,
-						configs.test_duration_iperf_sec,
-						iperf_tcp==true ? configs.TCP_iperf_offered_traffic : configs.UDP_iperf_offered_traffic);
+					if(strcmp(configs.my_bind_ip_address,"0.0.0.0")!=0) {
+						// Child work (exec)
+						snprintf(iperfcmdstr,IPERF_CMD_STR_MAX_SIZE,"%s/iperf -c %s %s -p %d -l %s -i 1 -t %d -b %s -B %s >1 /dev/null >2 /dev/null",
+							configs.exec_path_iperf,
+							configs.ip_data_remote,
+							iperf_tcp==true ? "" : iperfudpthrstr,
+							configs.port_iperf,
+							iperf_tcp==true ? configs.TCP_iperf_buf_len : configs.UDP_iperf_packet_len,
+							configs.test_duration_iperf_sec,
+							iperf_tcp==true ? configs.TCP_iperf_offered_traffic : configs.UDP_iperf_offered_traffic,
+							configs.my_bind_ip_address);
+					} else {
+						// Child work (exec)
+						snprintf(iperfcmdstr,IPERF_CMD_STR_MAX_SIZE,"%s/iperf -c %s %s -p %d -l %s -i 1 -t %d -b %s >1 /dev/null >2 /dev/null",
+							configs.exec_path_iperf,
+							configs.ip_data_remote,
+							iperf_tcp==true ? "" : iperfudpthrstr,
+							configs.port_iperf,
+							iperf_tcp==true ? configs.TCP_iperf_buf_len : configs.UDP_iperf_packet_len,
+							configs.test_duration_iperf_sec,
+							iperf_tcp==true ? configs.TCP_iperf_offered_traffic : configs.UDP_iperf_offered_traffic);
+					}
+
 					if(exect(iperfcmdstr)<0) {
 						fprintf(stderr,"Error: cannot spawn the iperf client for the UL (master->slave) test (%s). exect() error.\n",iperf_tcp==true ? "tcp" : "udp");
 						iperf_tcp==true ? errors.iperf_TCP_UL++ : errors.iperf_UDP_UL++;
@@ -1602,13 +1673,27 @@ int main (int argc, char **argv) {
 					close(udp_sockd);
 					close(tcp_sockd);
 					close(listen_tcpsockd);
-					// Child work (exec)
-					snprintf(latecmdstr,LATE_CMD_STR_MAX_SIZE,"%s/LaTe -s -u -p %d -t 10000 -S %s -W %s/LaTe_bidir_P_%d_%lu_perpkt "
-						"-X mnrp --initial-timeout >1 /dev/null >a2 late_errors_bidir.log",
-						configs.exec_path_late,
-						configs.port_late_bidir,
-						configs.test_interface,
-						logdirnames.logs_bidir_dir_str,late_payloads[payload_lengths_idx],now.tv_sec);
+
+					// Checking for bind_ip_address_remote as this is the slave code
+					if(strcmp(configs.bind_ip_address_remote,"0.0.0.0")!=0) {
+						// Child work (exec)
+						snprintf(latecmdstr,LATE_CMD_STR_MAX_SIZE,"%s/LaTe -s -u -p %d -t 10000 -S %s -W %s/LaTe_bidir_P_%d_%lu_perpkt "
+							"-X mnrp --initial-timeout --bind-to-ip %s >1 /dev/null >a2 late_errors_bidir.log",
+							configs.exec_path_late,
+							configs.port_late_bidir,
+							configs.test_interface,
+							logdirnames.logs_bidir_dir_str,late_payloads[payload_lengths_idx],now.tv_sec,
+							configs.bind_ip_address_remote);
+					} else {
+						// Child work (exec)
+						snprintf(latecmdstr,LATE_CMD_STR_MAX_SIZE,"%s/LaTe -s -u -p %d -t 10000 -S %s -W %s/LaTe_bidir_P_%d_%lu_perpkt "
+							"-X mnrp --initial-timeout >1 /dev/null >a2 late_errors_bidir.log",
+							configs.exec_path_late,
+							configs.port_late_bidir,
+							configs.test_interface,
+							logdirnames.logs_bidir_dir_str,late_payloads[payload_lengths_idx],now.tv_sec);
+					}
+
 					if(exect(latecmdstr)<0) {
 						fprintf(stderr,"Error: cannot spawn LaTe bidirectional (RTT) process (server). exect() error.\n");
 						errors.late_bidir++;
@@ -1627,13 +1712,25 @@ int main (int argc, char **argv) {
 						close(tcp_sockd);
 						close(listen_tcpsockd);
 
-						// Child work (exec)
-						snprintf(latecmdstr,LATE_CMD_STR_MAX_SIZE,"%s/LaTe -s -u -p %d -t 10000 -S %s -W %s/LaTe_unidir_UL_P_%d_%lu_perpkt "
-							"-X mnrp --initial-timeout >1 /dev/null >a2 late_errors_unidir_UL.log",
-							configs.exec_path_late,
-							configs.port_late_unidir_UL,
-							configs.test_interface,
-							logdirnames.logs_unidir_UL_dir_str,late_payloads[payload_lengths_idx],now.tv_sec);
+						if(strcmp(configs.bind_ip_address_remote,"0.0.0.0")!=0) {
+							// Child work (exec)
+							snprintf(latecmdstr,LATE_CMD_STR_MAX_SIZE,"%s/LaTe -s -u -p %d -t 10000 -S %s -W %s/LaTe_unidir_UL_P_%d_%lu_perpkt "
+								"-X mnrp --initial-timeout --bind-to-ip %s >1 /dev/null >a2 late_errors_unidir_UL.log",
+								configs.exec_path_late,
+								configs.port_late_unidir_UL,
+								configs.test_interface,
+								logdirnames.logs_unidir_UL_dir_str,late_payloads[payload_lengths_idx],now.tv_sec,
+								configs.bind_ip_address_remote);
+						} else {
+							// Child work (exec)
+							snprintf(latecmdstr,LATE_CMD_STR_MAX_SIZE,"%s/LaTe -s -u -p %d -t 10000 -S %s -W %s/LaTe_unidir_UL_P_%d_%lu_perpkt "
+								"-X mnrp --initial-timeout >1 /dev/null >a2 late_errors_unidir_UL.log",
+								configs.exec_path_late,
+								configs.port_late_unidir_UL,
+								configs.test_interface,
+								logdirnames.logs_unidir_UL_dir_str,late_payloads[payload_lengths_idx],now.tv_sec);
+						}
+
 						if(exect(latecmdstr)<0) {
 							fprintf(stderr,"Error: cannot spawn LaTe bidirectional (RTT) process (server). exect() error.\n");
 							errors.late_unidir_UL++;
@@ -1665,18 +1762,35 @@ int main (int argc, char **argv) {
 						close(tcp_sockd);
 						close(listen_tcpsockd);
 
-						// Child work (exec)
-						snprintf(latecmdstr,LATE_CMD_STR_MAX_SIZE,"%s/LaTe -c %s -u -U -P %d -t %d -R e%d,%d -i %d -p %d -T 10000 -S %s "
-							"-f %s/LaTe_unidir_DL_%lu_final >1 /dev/null >a2 late_errors_unidir_DL.log",
-							configs.exec_path_late,
-							configs.my_ip_data,
-							late_payloads[payload_lengths_idx],
-							configs.late_min_periodicity,
-							configs.late_mean_periodicity,configs.late_periodicity_batch,
-							configs.test_duration_late_sec,
-							configs.port_late_unidir_DL,
-							configs.test_interface,
-							logdirnames.logs_unidir_DL_dir_str,now_begin.tv_sec);
+						if(strcmp(configs.bind_ip_address_remote,"0.0.0.0")!=0) {
+							// Child work (exec)
+							snprintf(latecmdstr,LATE_CMD_STR_MAX_SIZE,"%s/LaTe -c %s -u -U -P %d -t %d -R e%d,%d -i %d -p %d -T 10000 -S %s "
+								"-f %s/LaTe_unidir_DL_%lu_final --bind-to-ip %s >1 /dev/null >a2 late_errors_unidir_DL.log",
+								configs.exec_path_late,
+								configs.my_ip_data,
+								late_payloads[payload_lengths_idx],
+								configs.late_min_periodicity,
+								configs.late_mean_periodicity,configs.late_periodicity_batch,
+								configs.test_duration_late_sec,
+								configs.port_late_unidir_DL,
+								configs.test_interface,
+								logdirnames.logs_unidir_DL_dir_str,now_begin.tv_sec,
+								configs.bind_ip_address_remote);
+						} else {
+							// Child work (exec)
+							snprintf(latecmdstr,LATE_CMD_STR_MAX_SIZE,"%s/LaTe -c %s -u -U -P %d -t %d -R e%d,%d -i %d -p %d -T 10000 -S %s "
+								"-f %s/LaTe_unidir_DL_%lu_final >1 /dev/null >a2 late_errors_unidir_DL.log",
+								configs.exec_path_late,
+								configs.my_ip_data,
+								late_payloads[payload_lengths_idx],
+								configs.late_min_periodicity,
+								configs.late_mean_periodicity,configs.late_periodicity_batch,
+								configs.test_duration_late_sec,
+								configs.port_late_unidir_DL,
+								configs.test_interface,
+								logdirnames.logs_unidir_DL_dir_str,now_begin.tv_sec);
+						}
+
 						if(exect(latecmdstr)<0) {
 							fprintf(stderr,"Error: cannot spawn LaTe unidirectional (DL) process (client). exect() error.\n");
 							errors.late_unidir_DL++;
@@ -1786,15 +1900,29 @@ int main (int argc, char **argv) {
 						snprintf(iperfudpthrstr,IPERF_UDP_THR_STR_SIZE,"-u -P %d",configs.UDP_iperf_num_threads);
 					}
 
-					// Child work (exec)
-					snprintf(iperfcmdstr,IPERF_CMD_STR_MAX_SIZE,"%s/iperf -c %s %s -p %d -l %s -i 1 -t %d -b %s >1 /dev/null >2 /dev/null",
-						configs.exec_path_iperf,
-						configs.my_ip_data,
-						iperf_tcp==true ? "" : iperfudpthrstr,
-						configs.port_iperf,
-						iperf_tcp==true ? configs.TCP_iperf_buf_len : configs.UDP_iperf_packet_len,
-						configs.test_duration_iperf_sec,
-						iperf_tcp==true ? configs.TCP_iperf_offered_traffic : configs.UDP_iperf_offered_traffic);
+					if(strcmp(configs.bind_ip_address_remote,"0.0.0.0")!=0) {
+						// Child work (exec)
+						snprintf(iperfcmdstr,IPERF_CMD_STR_MAX_SIZE,"%s/iperf -c %s %s -p %d -l %s -i 1 -t %d -b %s -B %s >1 /dev/null >2 /dev/null",
+							configs.exec_path_iperf,
+							configs.my_ip_data,
+							iperf_tcp==true ? "" : iperfudpthrstr,
+							configs.port_iperf,
+							iperf_tcp==true ? configs.TCP_iperf_buf_len : configs.UDP_iperf_packet_len,
+							configs.test_duration_iperf_sec,
+							iperf_tcp==true ? configs.TCP_iperf_offered_traffic : configs.UDP_iperf_offered_traffic,
+							configs.bind_ip_address_remote);
+					} else {
+						// Child work (exec)
+						snprintf(iperfcmdstr,IPERF_CMD_STR_MAX_SIZE,"%s/iperf -c %s %s -p %d -l %s -i 1 -t %d -b %s >1 /dev/null >2 /dev/null",
+							configs.exec_path_iperf,
+							configs.my_ip_data,
+							iperf_tcp==true ? "" : iperfudpthrstr,
+							configs.port_iperf,
+							iperf_tcp==true ? configs.TCP_iperf_buf_len : configs.UDP_iperf_packet_len,
+							configs.test_duration_iperf_sec,
+							iperf_tcp==true ? configs.TCP_iperf_offered_traffic : configs.UDP_iperf_offered_traffic);
+					}
+
 					if(exect(iperfcmdstr)<0) {
 						fprintf(stderr,"Error: cannot spawn the iperf client for the UL (master->slave) test (%s). exect() error.\n",iperf_tcp==true ? "tcp" : "udp");
 						iperf_tcp==true ? errors.iperf_TCP_DL++ : errors.iperf_UDP_DL++;
@@ -1849,13 +1977,25 @@ int main (int argc, char **argv) {
 					close(tcp_sockd);
 					close(listen_tcpsockd);
 
-					// Child work (exec)
-					snprintf(iperfcmdstr,IPERF_CMD_STR_MAX_SIZE,"%s/iperf -s %s -i 1 -p %d -l %s -y C >1 %s/iperf_throughput_%s_%lu.csv",
-						configs.exec_path_iperf,
-						iperf_tcp==true ? "" : "-u",
-						configs.port_iperf,
-						iperf_tcp==true ? configs.TCP_iperf_buf_len : configs.UDP_iperf_packet_len,
-						logdirnames.logs_iperf_UL_dir_str,iperf_tcp==true ? "tcp" : "udp",now.tv_sec);
+					if(strcmp(configs.bind_ip_address_remote,"0.0.0.0")!=0) {
+						// Child work (exec)
+						snprintf(iperfcmdstr,IPERF_CMD_STR_MAX_SIZE,"%s/iperf -s %s -i 1 -p %d -l %s -y C -B %s >1 %s/iperf_throughput_%s_%lu.csv",
+							configs.exec_path_iperf,
+							iperf_tcp==true ? "" : "-u",
+							configs.port_iperf,
+							iperf_tcp==true ? configs.TCP_iperf_buf_len : configs.UDP_iperf_packet_len,
+							configs.bind_ip_address_remote,
+							logdirnames.logs_iperf_UL_dir_str,iperf_tcp==true ? "tcp" : "udp",now.tv_sec);
+					} else {
+						// Child work (exec)
+						snprintf(iperfcmdstr,IPERF_CMD_STR_MAX_SIZE,"%s/iperf -s %s -i 1 -p %d -l %s -y C >1 %s/iperf_throughput_%s_%lu.csv",
+							configs.exec_path_iperf,
+							iperf_tcp==true ? "" : "-u",
+							configs.port_iperf,
+							iperf_tcp==true ? configs.TCP_iperf_buf_len : configs.UDP_iperf_packet_len,
+							logdirnames.logs_iperf_UL_dir_str,iperf_tcp==true ? "tcp" : "udp",now.tv_sec);
+					}
+
 					if(exect(iperfcmdstr)<0) {
 						fprintf(stderr,"Error: cannot spawn the iperf server for the UL (master->slave) test (%s). exect() error.\n",iperf_tcp==true ? "tcp" : "udp");
 						iperf_tcp==true ? errors.iperf_TCP_UL++ : errors.iperf_UDP_UL++;
